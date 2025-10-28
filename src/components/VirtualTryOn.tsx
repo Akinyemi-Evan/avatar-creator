@@ -17,17 +17,35 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
   const [isLoading, setIsLoading] = useState(false);
   const [measurements, setMeasurements] = useState<BodyMeasurements | null>(null);
   const [clothingTextureUrl, setClothingTextureUrl] = useState<string | null>(null);
+  const [enhancedPersonImageUrl, setEnhancedPersonImageUrl] = useState<string | null>(null);
 
-  // Extract body measurements when person image is loaded
+  // Extract body measurements and generate enhanced texture when person image is loaded
   useEffect(() => {
-    const loadMeasurements = async () => {
+    const loadAvatarData = async () => {
       setIsLoading(true);
       try {
-        const extracted = await extractBodyMeasurements(personImageUrl);
+        // Extract measurements and generate AI-enhanced texture in parallel
+        const [extracted, aiResponse] = await Promise.all([
+          extractBodyMeasurements(personImageUrl),
+          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-avatar-features`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ personImageUrl })
+          }).then(res => res.json())
+        ]);
+
         setMeasurements(extracted);
-        toast.success("3D avatar generated from your photo!");
+        
+        if (aiResponse.enhancedTextureUrl) {
+          setEnhancedPersonImageUrl(aiResponse.enhancedTextureUrl);
+          toast.success("Realistic 3D avatar generated from your photo!");
+        } else {
+          toast.success("3D avatar generated from your photo!");
+        }
       } catch (error) {
-        console.error("Error extracting measurements:", error);
+        console.error("Error processing photo:", error);
         toast.error("Failed to analyze photo. Using default avatar.");
         setMeasurements({
           height: 1.0,
@@ -41,7 +59,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
       }
     };
 
-    loadMeasurements();
+    loadAvatarData();
   }, [personImageUrl]);
 
   const handleTryOn = async () => {
@@ -94,7 +112,11 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             </div>
             
             {measurements ? (
-              <Avatar3D measurements={measurements} clothingTextureUrl={clothingTextureUrl} personImageUrl={personImageUrl} />
+              <Avatar3D 
+                measurements={measurements} 
+                clothingTextureUrl={clothingTextureUrl} 
+                personImageUrl={enhancedPersonImageUrl || personImageUrl} 
+              />
             ) : (
               <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
                 <div className="text-center">
