@@ -1,12 +1,38 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from "react";
+import { Hero } from "@/components/Hero";
+import { PhotoUpload } from "@/components/PhotoUpload";
+import { VirtualTryOn } from "@/components/VirtualTryOn";
 
 const Index = () => {
+  const [personImageUrl, setPersonImageUrl] = useState<string | null>(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
+
+  const handlePhotoProcessed = (processedUrl: string, originalUrl: string) => {
+    setPersonImageUrl(processedUrl);
+    setOriginalImageUrl(originalUrl);
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen">
+      <Hero />
+      
+      <PhotoUpload onPhotoProcessed={handlePhotoProcessed} />
+      
+      {personImageUrl && originalImageUrl && (
+        <VirtualTryOn 
+          personImageUrl={personImageUrl}
+          originalImageUrl={originalImageUrl}
+        />
+      )}
+      
+      {/* Footer */}
+      <footer className="border-t border-border mt-20">
+        <div className="container mx-auto px-4 py-8">
+          <p className="text-center text-sm text-muted-foreground">
+            Powered by AI • Virtual Try-On Studio
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
