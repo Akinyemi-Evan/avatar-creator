@@ -94,7 +94,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             </div>
             
             {measurements ? (
-              <Avatar3D measurements={measurements} clothingTextureUrl={clothingTextureUrl} />
+              <Avatar3D measurements={measurements} clothingTextureUrl={clothingTextureUrl} personImageUrl={personImageUrl} />
             ) : (
               <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
                 <div className="text-center">
