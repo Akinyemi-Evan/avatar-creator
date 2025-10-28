@@ -1,4 +1,4 @@
-import { pipeline, env } from '@huggingface/transformers';
+import { AutoModel, AutoProcessor, RawImage, env } from '@huggingface/transformers';
 
 // Configure transformers.js
 env.allowLocalModels = false;
@@ -34,61 +34,55 @@ export const removeBackground = async (
   try {
     onProgress?.('Loading AI model...');
     
-    const segmenter = await pipeline(
-      'image-segmentation',
-      'Xenova/segformer-b2-clothes',
-      { device: 'webgpu' }
-    );
+    // Load model and processor
+    const model = await AutoModel.from_pretrained('Xenova/modnet', {
+      device: 'webgpu',
+      dtype: 'fp32'
+    });
+    
+    const processor = await AutoProcessor.from_pretrained('Xenova/modnet');
     
     onProgress?.('Processing image...');
     
-    // Convert HTMLImageElement to canvas
+    // Convert HTMLImageElement to RawImage
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
     if (!ctx) throw new Error('Could not get canvas context');
     
-    // Resize and draw image
     const { width, height } = resizeImageIfNeeded(canvas, ctx, imageElement);
     
-    // Get image data as base64
-    const imageData = canvas.toDataURL('image/jpeg', 0.9);
+    // Create RawImage from canvas
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const rawImage = new RawImage(new Uint8Array(imageData.data.buffer), width, height, 4);
     
-    // Process with segmentation model
+    // Pre-process image
     onProgress?.('Detecting person...');
-    const result = await segmenter(imageData);
+    const { pixel_values } = await processor(rawImage);
     
-    if (!result || !Array.isArray(result) || result.length === 0) {
-      throw new Error('Invalid segmentation result');
-    }
+    // Predict alpha matte
+    onProgress?.('Removing background...');
+    const { output } = await model({ input: pixel_values });
     
-    // Create output canvas
+    // Create mask from output
+    const mask = await RawImage.fromTensor(output[0].mul(255).to('uint8')).resize(width, height);
+    
+    // Create output canvas with transparency
     const outputCanvas = document.createElement('canvas');
     outputCanvas.width = width;
     outputCanvas.height = height;
     const outputCtx = outputCanvas.getContext('2d');
-    
     if (!outputCtx) throw new Error('Could not get output canvas context');
     
     // Draw original image
     outputCtx.drawImage(canvas, 0, 0);
     
-    // Apply mask to remove background
-    onProgress?.('Removing background...');
+    // Apply mask as alpha channel
     const outputImageData = outputCtx.getImageData(0, 0, width, height);
-    const data = outputImageData.data;
+    const outputData = outputImageData.data;
+    const maskData = mask.data;
     
-    // Find the person mask (usually the largest mask or labeled as "person")
-    const personMask = result.find(r => 
-      r.label?.toLowerCase().includes('person') || 
-      r.label?.toLowerCase().includes('human')
-    ) || result[0];
-    
-    if (personMask?.mask) {
-      for (let i = 0; i < personMask.mask.data.length; i++) {
-        const alpha = Math.round(personMask.mask.data[i] * 255);
-        data[i * 4 + 3] = alpha;
-      }
+    for (let i = 0; i < maskData.length; i++) {
+      outputData[i * 4 + 3] = maskData[i]; // Set alpha channel
     }
     
     outputCtx.putImageData(outputImageData, 0, 0);
