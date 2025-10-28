@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
-import { HumanoidAvatar } from "@/components/HumanoidAvatar";
+import { Avatar3D } from "@/components/Avatar3D";
 import { extractBodyMeasurements, BodyMeasurements } from "@/lib/bodyMeasurements";
 
 interface VirtualTryOnProps {
@@ -53,9 +53,11 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
         setMeasurements(extracted);
         
         if (aiResponse.enhancedTextureUrl) {
+          console.log("AI-enhanced texture received:", aiResponse.enhancedTextureUrl.substring(0, 50) + "...");
           setEnhancedPersonImageUrl(aiResponse.enhancedTextureUrl);
           toast.success("Realistic 3D avatar generated from your photo!");
         } else {
+          console.log("No enhanced texture in response:", aiResponse);
           toast.success("3D avatar generated from your photo!");
         }
       } catch (error) {
@@ -126,7 +128,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             </div>
             
             {measurements ? (
-              <HumanoidAvatar 
+              <Avatar3D 
                 measurements={measurements} 
                 clothingTextureUrl={clothingTextureUrl} 
                 personImageUrl={enhancedPersonImageUrl || personImageUrl} 
