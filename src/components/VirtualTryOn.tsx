@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar3D } from "@/components/Avatar3D";
+import { HumanoidAvatar } from "@/components/HumanoidAvatar";
 import { extractBodyMeasurements, BodyMeasurements } from "@/lib/bodyMeasurements";
 
 interface VirtualTryOnProps {
@@ -126,7 +126,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             </div>
             
             {measurements ? (
-              <Avatar3D 
+              <HumanoidAvatar 
                 measurements={measurements} 
                 clothingTextureUrl={clothingTextureUrl} 
                 personImageUrl={enhancedPersonImageUrl || personImageUrl} 
