@@ -24,6 +24,20 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
     const loadAvatarData = async () => {
       setIsLoading(true);
       try {
+        // Convert blob URL to base64 for backend processing
+        const blobToBase64 = async (url: string): Promise<string> => {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+        };
+
+        const imageBase64 = await blobToBase64(personImageUrl);
+
         // Extract measurements and generate AI-enhanced texture in parallel
         const [extracted, aiResponse] = await Promise.all([
           extractBodyMeasurements(personImageUrl),
@@ -32,7 +46,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ personImageUrl })
+            body: JSON.stringify({ personImageBase64: imageBase64 })
           }).then(res => res.json())
         ]);
 

@@ -11,11 +11,11 @@ serve(async (req) => {
   }
 
   try {
-    const { personImageUrl } = await req.json();
+    const { personImageBase64 } = await req.json();
     
-    if (!personImageUrl) {
+    if (!personImageBase64) {
       return new Response(
-        JSON.stringify({ error: 'Missing personImageUrl' }),
+        JSON.stringify({ error: 'Missing personImageBase64' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -47,7 +47,7 @@ serve(async (req) => {
               {
                 type: 'image_url',
                 image_url: {
-                  url: personImageUrl
+                  url: personImageBase64
                 }
               }
             ]
