@@ -30,15 +30,15 @@ serve(async (req) => {
       auth: REPLICATE_API_KEY,
     });
 
-    console.log('Step 1: Enhancing face with CodeFormer...');
+    console.log('Enhancing photo with CodeFormer...');
     
-    // Step 1: Face enhancement with CodeFormer
-    const enhancedFace = await replicate.run(
-      "sczhou/codeformer:7de2ea26c616d5bf2245ad0d5e24f0ff9a6204578a5c876db53142edd9d2cd56",
+    // Use CodeFormer for face enhancement and restoration
+    const enhanced = await replicate.run(
+      "sczhou/codeformer:cc4956dd26fa5a7185d5660cc9100fab1b8070a1d1654a8bb5eb6d443b020bb2",
       {
         input: {
           image: personImageBase64,
-          codeformer_fidelity: 0.7,
+          codeformer_fidelity: 0.9,
           background_enhance: true,
           face_upsample: true,
           upscale: 2
@@ -46,59 +46,12 @@ serve(async (req) => {
       }
     ) as string;
 
-    console.log('Face enhanced:', enhancedFace);
-
-    console.log('Step 2: Upscaling texture with Real-ESRGAN...');
-    
-    // Step 2: Upscale with Real-ESRGAN for high-quality texture
-    const upscaledTexture = await replicate.run(
-      "nightmareai/real-esrgan:42fed1c4974146d4d2414e2be2c5277c7fcf05fcc3a73abf41610695738c1d7b",
-      {
-        input: {
-          image: enhancedFace,
-          scale: 2,
-          face_enhance: true
-        }
-      }
-    ) as string;
-
-    console.log('Texture upscaled:', upscaledTexture);
-
-    console.log('Step 3: Generating 3D mesh with PIFuHD...');
-    
-    // Step 3: Generate 3D full-body mesh with PIFuHD-based model
-    const mesh3D = await replicate.run(
-      "tokaito14/fullbody:7531f3912c49035a7bc6bec0fbcd45322c4594a86fdcd822e85b047ed05d753a",
-      {
-        input: {
-          image: upscaledTexture
-        }
-      }
-    ) as any;
-
-    console.log('3D mesh generated:', mesh3D);
-
-    // Extract GLB/OBJ file from the output
-    const meshUrl = mesh3D?.glb || mesh3D?.obj || (Array.isArray(mesh3D) ? mesh3D[0] : mesh3D);
-    
-    if (!meshUrl) {
-      console.error('No 3D mesh in response:', mesh3D);
-      return new Response(
-        JSON.stringify({ 
-          enhancedTextureUrl: upscaledTexture,
-          message: 'Production-quality texture generated (3D mesh generation in progress)'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    console.log('Successfully generated production-quality 3D avatar');
+    console.log('Photo enhanced successfully:', enhanced);
 
     return new Response(
       JSON.stringify({ 
-        enhancedTextureUrl: upscaledTexture,
-        mesh3DUrl: meshUrl,
-        message: 'Production 3D avatar generated successfully'
+        enhancedTextureUrl: enhanced,
+        message: 'Photo enhanced with CodeFormer'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

@@ -20,6 +20,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
   const [clothingTextureUrl, setClothingTextureUrl] = useState<string | null>(null);
   const [enhancedPersonImageUrl, setEnhancedPersonImageUrl] = useState<string | null>(null);
   const [mesh3DUrl, setMesh3DUrl] = useState<string | null>(null);
+  const [aiResponse, setAiResponse] = useState<any>({});
 
   // Extract body measurements and generate enhanced texture when person image is loaded
   useEffect(() => {
@@ -41,7 +42,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
         const imageBase64 = await blobToBase64(personImageUrl);
 
         // Extract measurements and generate AI-enhanced texture in parallel
-        const [extracted, aiResponse] = await Promise.all([
+        const [extracted, response] = await Promise.all([
           extractBodyMeasurements(personImageUrl),
           fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-avatar-features`, {
             method: 'POST',
@@ -53,18 +54,22 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
         ]);
 
         setMeasurements(extracted);
+        setAiResponse(response);
         
-        if (aiResponse.mesh3DUrl) {
-          console.log("3D mesh received:", aiResponse.mesh3DUrl);
-          setMesh3DUrl(aiResponse.mesh3DUrl);
-          setEnhancedPersonImageUrl(aiResponse.enhancedTextureUrl);
+        if (response.error) {
+          console.error("Replicate API error:", response.error);
+          toast.error("Failed to generate avatar with Replicate AI");
+        } else if (response.mesh3DUrl) {
+          console.log("3D mesh received:", response.mesh3DUrl);
+          setMesh3DUrl(response.mesh3DUrl);
+          setEnhancedPersonImageUrl(response.enhancedTextureUrl);
           toast.success("Production-quality 3D avatar generated!");
-        } else if (aiResponse.enhancedTextureUrl) {
-          console.log("AI-enhanced texture received:", aiResponse.enhancedTextureUrl.substring(0, 50) + "...");
-          setEnhancedPersonImageUrl(aiResponse.enhancedTextureUrl);
-          toast.success("Realistic 3D avatar generated from your photo!");
+        } else if (response.enhancedTextureUrl) {
+          console.log("AI-enhanced texture received:", response.enhancedTextureUrl.substring(0, 50) + "...");
+          setEnhancedPersonImageUrl(response.enhancedTextureUrl);
+          toast.success("Photo enhanced with Replicate AI!");
         } else {
-          console.log("No enhanced texture in response:", aiResponse);
+          console.log("No enhanced texture in response:", response);
           toast.success("3D avatar generated from your photo!");
         }
       } catch (error) {
@@ -134,7 +139,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
               </p>
             </div>
             
-            {measurements ? (
+            {measurements && !aiResponse.error ? (
               mesh3DUrl ? (
                 <RealisticAvatar3D 
                   meshUrl={mesh3DUrl}
@@ -147,6 +152,19 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
                   personImageUrl={enhancedPersonImageUrl || personImageUrl} 
                 />
               )
+            ) : aiResponse.error ? (
+              <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
+                <div className="text-center max-w-md px-4">
+                  <div className="text-6xl mb-4">⚠️</div>
+                  <p className="text-lg font-semibold mb-2 text-destructive">Avatar Generation Failed</p>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Unable to connect to Replicate AI service. Please check your API key and try again.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Error: {aiResponse.error}
+                  </p>
+                </div>
+              </div>
             ) : (
               <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
                 <div className="text-center">
