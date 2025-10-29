@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Link as LinkIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar3D } from "@/components/Avatar3D";
+import { RealisticAvatar3D } from "@/components/RealisticAvatar3D";
 import { extractBodyMeasurements, BodyMeasurements } from "@/lib/bodyMeasurements";
 
 interface VirtualTryOnProps {
@@ -18,6 +19,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
   const [measurements, setMeasurements] = useState<BodyMeasurements | null>(null);
   const [clothingTextureUrl, setClothingTextureUrl] = useState<string | null>(null);
   const [enhancedPersonImageUrl, setEnhancedPersonImageUrl] = useState<string | null>(null);
+  const [mesh3DUrl, setMesh3DUrl] = useState<string | null>(null);
 
   // Extract body measurements and generate enhanced texture when person image is loaded
   useEffect(() => {
@@ -52,7 +54,12 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
 
         setMeasurements(extracted);
         
-        if (aiResponse.enhancedTextureUrl) {
+        if (aiResponse.mesh3DUrl) {
+          console.log("3D mesh received:", aiResponse.mesh3DUrl);
+          setMesh3DUrl(aiResponse.mesh3DUrl);
+          setEnhancedPersonImageUrl(aiResponse.enhancedTextureUrl);
+          toast.success("Production-quality 3D avatar generated!");
+        } else if (aiResponse.enhancedTextureUrl) {
           console.log("AI-enhanced texture received:", aiResponse.enhancedTextureUrl.substring(0, 50) + "...");
           setEnhancedPersonImageUrl(aiResponse.enhancedTextureUrl);
           toast.success("Realistic 3D avatar generated from your photo!");
@@ -128,11 +135,18 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             </div>
             
             {measurements ? (
-              <Avatar3D 
-                measurements={measurements} 
-                clothingTextureUrl={clothingTextureUrl} 
-                personImageUrl={enhancedPersonImageUrl || personImageUrl} 
-              />
+              mesh3DUrl ? (
+                <RealisticAvatar3D 
+                  meshUrl={mesh3DUrl}
+                  clothingTextureUrl={clothingTextureUrl}
+                />
+              ) : (
+                <Avatar3D 
+                  measurements={measurements} 
+                  clothingTextureUrl={clothingTextureUrl} 
+                  personImageUrl={enhancedPersonImageUrl || personImageUrl} 
+                />
+              )
             ) : (
               <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
                 <div className="text-center">
