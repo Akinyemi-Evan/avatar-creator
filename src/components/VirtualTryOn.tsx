@@ -1,12 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Loader2, Link as LinkIcon } from "lucide-react";
+import { RealisticAvatar3D } from "./RealisticAvatar3D";
+import { Avatar3D } from "./Avatar3D";
+import { extractBodyMeasurements } from "@/lib/bodyMeasurements";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Avatar3D } from "@/components/Avatar3D";
-import { RealisticAvatar3D } from "@/components/RealisticAvatar3D";
-import { extractBodyMeasurements, BodyMeasurements } from "@/lib/bodyMeasurements";
+import { Loader2 } from "lucide-react";
+import { validateImageUrl, loadImageWithTimeout } from "@/lib/validation/urlValidator";
+import { TIMEOUT_CONFIG } from "@/lib/constants/avatar3d";
 
 interface VirtualTryOnProps {
   personImageUrl: string;
@@ -14,220 +17,203 @@ interface VirtualTryOnProps {
 }
 
 export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnProps) => {
-  const [clothingUrl, setClothingUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [measurements, setMeasurements] = useState<BodyMeasurements | null>(null);
-  const [clothingTextureUrl, setClothingTextureUrl] = useState<string | null>(null);
-  const [enhancedPersonImageUrl, setEnhancedPersonImageUrl] = useState<string | null>(null);
+  const [clothingTextureUrl, setClothingTextureUrl] = useState<string>("");
+  const [clothingUrl, setClothingUrl] = useState<string>("");
   const [faceMeshUrl, setFaceMeshUrl] = useState<string | null>(null);
   const [bodyMeshUrl, setBodyMeshUrl] = useState<string | null>(null);
   const [faceTextureUrl, setFaceTextureUrl] = useState<string | null>(null);
-  const [aiResponse, setAiResponse] = useState<any>({});
+  const [measurements, setMeasurements] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState<string>("");
+  
+  // Track blob URLs for cleanup
+  const blobUrlsRef = useRef<string[]>([]);
 
-  // Extract body measurements and generate enhanced texture when person image is loaded
+  // Cleanup blob URLs on unmount
   useEffect(() => {
-    const loadAvatarData = async () => {
+    return () => {
+      blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
+      blobUrlsRef.current = [];
+    };
+  }, []);
+
+  useEffect(() => {
+    const generateAvatar = async () => {
+      if (!personImageUrl) return;
+      
       setIsLoading(true);
+      setError(null);
+      setLoadingProgress("Converting image...");
+
       try {
-        // Convert blob URL to base64 for backend processing
-        const blobToBase64 = async (url: string): Promise<string> => {
-          const response = await fetch(url);
-          const blob = await response.blob();
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          });
-        };
-
-        const imageBase64 = await blobToBase64(personImageUrl);
-
-        // Extract measurements and generate AI-enhanced texture in parallel
-        const [extracted, response] = await Promise.all([
-          extractBodyMeasurements(personImageUrl),
-          fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-avatar-features`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ personImageBase64: imageBase64 })
-          }).then(res => res.json())
-        ]);
-
-        setMeasurements(extracted);
-        setAiResponse(response);
-        
-        if (response.error) {
-          console.error("Replicate API error:", response.error);
-          toast.error("Failed to generate avatar with Replicate AI");
-        } else if (response.faceMeshUrl && response.bodyMeshUrl) {
-          console.log("Face and body meshes received");
-          setFaceMeshUrl(response.faceMeshUrl);
-          setBodyMeshUrl(response.bodyMeshUrl);
-          setFaceTextureUrl(response.faceTextureUrl);
-          toast.success("3D avatar with face and body generated!");
-        } else {
-          console.log("Unexpected response format:", response);
-          toast.error("Failed to generate 3D avatar");
-        }
-      } catch (error) {
-        console.error("Error processing photo:", error);
-        toast.error("Failed to analyze photo. Using default avatar.");
-        setMeasurements({
-          height: 1.0,
-          shoulderWidth: 1.0,
-          torsoLength: 1.0,
-          armLength: 1.0,
-          legLength: 1.0,
+        // Convert image URL to base64
+        const response = await fetch(personImageUrl);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
         });
+
+        setLoadingProgress("Extracting measurements...");
+        // Extract measurements first (fast operation)
+        const measurementsData = await extractBodyMeasurements(personImageUrl);
+        setMeasurements(measurementsData);
+
+        setLoadingProgress("Generating 3D avatar (this may take up to 60s)...");
+        // Generate 3D meshes (slow operation)
+        const avatarData = await supabase.functions.invoke('generate-avatar-features', {
+          body: { personImageBase64: base64 }
+        });
+
+        if (avatarData.error) {
+          console.error('Avatar generation error:', avatarData.error);
+          throw new Error(avatarData.error.message || 'Failed to generate 3D avatar');
+        }
+
+        if (!avatarData.data?.faceMeshUrl || !avatarData.data?.bodyMeshUrl || !avatarData.data?.faceTextureUrl) {
+          console.error('Incomplete avatar data:', avatarData.data);
+          throw new Error('Incomplete 3D avatar data received');
+        }
+
+        setFaceMeshUrl(avatarData.data.faceMeshUrl);
+        setBodyMeshUrl(avatarData.data.bodyMeshUrl);
+        setFaceTextureUrl(avatarData.data.faceTextureUrl);
+
+        console.log('Avatar generation successful');
+        toast.success("3D avatar generated successfully!");
+      } catch (error) {
+        console.error('Error generating avatar:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to generate 3D avatar';
+        setError(errorMessage);
+        toast.error(errorMessage);
       } finally {
         setIsLoading(false);
+        setLoadingProgress("");
       }
     };
 
-    loadAvatarData();
+    generateAvatar();
   }, [personImageUrl]);
 
-  const handleTryOn = async () => {
-    if (!clothingUrl.trim()) {
+  const handleTryOn = async (clothingUrl: string) => {
+    if (!clothingUrl) {
       toast.error("Please enter a clothing image URL");
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Load the clothing image to verify it's valid
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = clothingUrl;
-      });
+    // Validate URL format and security
+    const validation = validateImageUrl(clothingUrl);
+    if (!validation.isValid) {
+      toast.error(validation.error || "Invalid clothing image URL");
+      console.error('URL validation failed:', validation.error);
+      return;
+    }
 
+    setIsLoading(true);
+    console.log('Loading clothing texture:', clothingUrl);
+    
+    try {
+      // Preload image with timeout and CORS handling
+      await loadImageWithTimeout(clothingUrl, TIMEOUT_CONFIG.textureLoading);
+      
       setClothingTextureUrl(clothingUrl);
-      toast.success("Clothing applied to your avatar!");
+      console.log('Clothing texture applied successfully');
+      toast.success("Clothing applied successfully!");
     } catch (error) {
-      console.error("Error loading clothing:", error);
-      toast.error("Failed to load clothing image. Please check the URL.");
+      console.error('Error applying clothing:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      if (errorMessage.includes('CORS')) {
+        toast.error("Cannot load image due to CORS restrictions. Try a different image URL.");
+      } else if (errorMessage.includes('timeout')) {
+        toast.error("Image loading timeout. The URL may be too slow or unavailable.");
+      } else {
+        toast.error("Failed to load clothing image. Please check the URL and try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <section className="container mx-auto px-4 py-12">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="container mx-auto px-4 py-12">
+      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
         {/* Avatar Display */}
-        <Card 
-          className="p-6 border-2"
-          style={{ 
-            boxShadow: 'var(--shadow-card)',
-            borderColor: 'hsl(var(--border))'
-          }}
-        >
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-2xl font-bold mb-2 bg-clip-text text-transparent" style={{ backgroundImage: 'var(--gradient-primary)' }}>
-                Your 3D Avatar
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Generated from your photo • Drag to rotate • Scroll to zoom
-              </p>
-            </div>
-            
-            {measurements && !aiResponse.error ? (
-              faceMeshUrl && bodyMeshUrl ? (
-                <RealisticAvatar3D 
-                  faceMeshUrl={faceMeshUrl}
-                  bodyMeshUrl={bodyMeshUrl}
-                  faceTextureUrl={faceTextureUrl}
-                  clothingTextureUrl={clothingTextureUrl}
-                />
-              ) : (
-                <Avatar3D 
-                  measurements={measurements} 
-                  clothingTextureUrl={clothingTextureUrl} 
-                  personImageUrl={enhancedPersonImageUrl || personImageUrl} 
-                />
-              )
-            ) : aiResponse.error ? (
-              <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
-                <div className="text-center max-w-md px-4">
-                  <div className="text-6xl mb-4">⚠️</div>
-                  <p className="text-lg font-semibold mb-2 text-destructive">Avatar Generation Failed</p>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Unable to connect to Replicate AI service. Please check your API key and try again.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Error: {aiResponse.error}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="h-[600px] flex items-center justify-center border border-border rounded-lg bg-background/50">
-                <div className="text-center">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-                  <p className="text-sm text-muted-foreground">Analyzing photo and generating avatar...</p>
-                </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Your 3D Avatar</CardTitle>
+            <CardDescription>Generated from your photo</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center h-full gap-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                {loadingProgress && (
+                  <p className="text-sm text-muted-foreground">{loadingProgress}</p>
+                )}
               </div>
             )}
-          </div>
+            
+            {!isLoading && error && (
+              <div className="text-center py-8">
+                <p className="text-destructive">{error}</p>
+              </div>
+            )}
+            
+            {!isLoading && !error && faceMeshUrl && bodyMeshUrl && (
+              <RealisticAvatar3D
+                faceMeshUrl={faceMeshUrl}
+                bodyMeshUrl={bodyMeshUrl}
+                faceTextureUrl={faceTextureUrl}
+                clothingTextureUrl={clothingTextureUrl}
+              />
+            )}
+            
+            {!isLoading && !error && measurements && !faceMeshUrl && (
+              <Avatar3D
+                measurements={measurements}
+                clothingTextureUrl={clothingTextureUrl}
+                personImageUrl={personImageUrl}
+              />
+            )}
+          </CardContent>
         </Card>
 
-        {/* Clothing Input */}
-        <Card 
-          className="p-6 border-2"
-          style={{ 
-            boxShadow: 'var(--shadow-card)',
-            borderColor: 'hsl(var(--border))'
-          }}
-        >
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-2xl font-bold mb-2 bg-clip-text text-transparent" style={{ backgroundImage: 'var(--gradient-primary)' }}>
-                Try On Clothing
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Paste the URL of any clothing image to see it on your avatar
-              </p>
-            </div>
-            
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <Input
-                  type="url"
-                  placeholder="https://example.com/shirt.jpg"
-                  value={clothingUrl}
-                  onChange={(e) => setClothingUrl(e.target.value)}
-                  className="h-12"
-                  disabled={isLoading || !measurements}
-                />
-              </div>
+        {/* Clothing Try-On */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Try On Clothing</CardTitle>
+            <CardDescription>Enter a clothing image URL</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <Input
+                type="url"
+                placeholder="https://example.com/clothing.jpg"
+                value={clothingUrl}
+                onChange={(e) => setClothingUrl(e.target.value)}
+                disabled={isLoading || !measurements}
+              />
               <Button
-                onClick={handleTryOn}
-                disabled={isLoading || !clothingUrl.trim() || !measurements}
-                className="h-12 px-8 bg-primary hover:bg-primary/90"
-                style={{ boxShadow: 'var(--shadow-glow)' }}
+                onClick={() => handleTryOn(clothingUrl)}
+                disabled={isLoading || !clothingUrl || !measurements}
+                className="w-full"
               >
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
+                    Loading...
                   </>
                 ) : (
-                  <>
-                    <LinkIcon className="mr-2 h-4 w-4" />
-                    Apply to Avatar
-                  </>
+                  "Apply Clothing"
                 )}
               </Button>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
-    </section>
+    </div>
   );
 };

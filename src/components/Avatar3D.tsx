@@ -3,6 +3,8 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { BodyMeasurements } from '@/lib/bodyMeasurements';
+import { ThreeErrorBoundary } from './ThreeErrorBoundary';
+import { ANIMATION_CONFIG, LIGHTING_CONFIG } from '@/lib/constants/avatar3d';
 
 interface Avatar3DProps {
   measurements: BodyMeasurements;
@@ -48,10 +50,11 @@ function AvatarModel({ measurements, clothingTextureUrl, personImageUrl }: Avata
     }
   }, [clothingTextureUrl]);
 
-  // Gentle idle animation
+  // Gentle idle animation using constants
   useFrame((state) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.3) * 0.05;
+      const { speed, amplitude } = ANIMATION_CONFIG.idleRotation;
+      groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * speed * 300) * amplitude * 2.5;
     }
   });
 
@@ -396,36 +399,38 @@ function AvatarModel({ measurements, clothingTextureUrl, personImageUrl }: Avata
 export function Avatar3D({ measurements, clothingTextureUrl, personImageUrl }: Avatar3DProps) {
   return (
     <div className="w-full h-[600px] rounded-lg overflow-hidden bg-gradient-to-b from-background/50 to-background border border-border">
-      <Canvas shadows>
-        <PerspectiveCamera makeDefault position={[0, 0.5, 4]} />
-        <OrbitControls
-          enablePan={false}
-          minDistance={2}
-          maxDistance={6}
-          maxPolarAngle={Math.PI / 1.8}
-          minPolarAngle={Math.PI / 6}
-        />
-        
-        {/* Lighting */}
-        <ambientLight intensity={0.6} />
-        <directionalLight
-          position={[5, 5, 5]}
-          intensity={1}
-          castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
-        />
-        <directionalLight position={[-5, 3, -5]} intensity={0.4} />
-        <pointLight position={[0, 2, 2]} intensity={0.5} />
-        
-        {/* Ground */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]} receiveShadow>
-          <planeGeometry args={[10, 10]} />
-          <shadowMaterial opacity={0.2} />
-        </mesh>
+      <ThreeErrorBoundary>
+        <Canvas shadows>
+          <PerspectiveCamera makeDefault position={[0, 0.5, 4]} />
+          <OrbitControls
+            enablePan={false}
+            minDistance={2}
+            maxDistance={6}
+            maxPolarAngle={Math.PI / 1.8}
+            minPolarAngle={Math.PI / 6}
+          />
+          
+          {/* Lighting using constants */}
+          <ambientLight intensity={LIGHTING_CONFIG.ambient.intensity + 0.1} />
+          <directionalLight
+            position={LIGHTING_CONFIG.directional.position}
+            intensity={LIGHTING_CONFIG.directional.intensity}
+            castShadow
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+          />
+          <directionalLight position={[-5, 3, -5]} intensity={0.4} />
+          <pointLight position={[0, 2, 2]} intensity={0.5} />
+          
+          {/* Ground */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]} receiveShadow>
+            <planeGeometry args={[10, 10]} />
+            <shadowMaterial opacity={0.2} />
+          </mesh>
 
-        <AvatarModel measurements={measurements} clothingTextureUrl={clothingTextureUrl} personImageUrl={personImageUrl} />
-      </Canvas>
+          <AvatarModel measurements={measurements} clothingTextureUrl={clothingTextureUrl} personImageUrl={personImageUrl} />
+        </Canvas>
+      </ThreeErrorBoundary>
     </div>
   );
 }
