@@ -1,0 +1,21 @@
+build:
+  gpu: true
+  python_version: "3.8"
+  system_packages:
+    - "libgl1-mesa-glx"
+    - "libglib2.0-0"
+  python_packages:
+    - "torch==1.9.0"
+    - "torchvision==0.10.0"
+    - "numpy==1.21.5"
+    - "opencv-python==4.5.5.64"
+    - "scikit-image==0.18.3"
+    - "trimesh==3.10.2"
+    - "Pillow==9.0.1"
+    - "tqdm==4.64.0"
+  run:
+    - git clone https://github.com/facebookresearch/pifuhd /src/pifuhd
+    - cd /src/pifuhd && mkdir -p checkpoints
+    - curl -o /src/pifuhd/checkpoints/pifuhd.pt https://dl.fbaipublicfiles.com/pifuhd/checkpoints/pifuhd.pt
+
+predict: "predict.py:Predictor"
