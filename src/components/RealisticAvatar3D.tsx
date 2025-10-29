@@ -5,27 +5,65 @@ import { Loader2 } from 'lucide-react';
 import * as THREE from 'three';
 
 interface RealisticAvatar3DProps {
-  meshUrl: string;
+  faceMeshUrl?: string;
+  bodyMeshUrl?: string;
+  faceTextureUrl?: string | null;
   clothingTextureUrl?: string | null;
+  meshUrl?: string; // Legacy support
 }
 
-function AvatarModel({ meshUrl, clothingTextureUrl }: RealisticAvatar3DProps) {
+function AvatarModel({ faceMeshUrl, bodyMeshUrl, faceTextureUrl, clothingTextureUrl, meshUrl }: RealisticAvatar3DProps) {
   const groupRef = useRef<THREE.Group>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { scene } = useGLTF(meshUrl);
+  
+  // Load face and body meshes separately, or fall back to single mesh
+  const faceGltf = faceMeshUrl ? useGLTF(faceMeshUrl) : null;
+  const bodyGltf = bodyMeshUrl ? useGLTF(bodyMeshUrl) : null;
+  const legacyGltf = meshUrl ? useGLTF(meshUrl) : null;
 
   useEffect(() => {
-    if (scene) {
-      setIsLoading(false);
+    const loadTextures = async () => {
+      const textureLoader = new THREE.TextureLoader();
       
-      // Apply clothing texture if provided
-      if (clothingTextureUrl) {
-        const textureLoader = new THREE.TextureLoader();
-        textureLoader.load(clothingTextureUrl, (texture) => {
-          scene.traverse((child) => {
+      // Apply face texture to face mesh
+      if (faceGltf && faceTextureUrl) {
+        try {
+          const texture = await textureLoader.loadAsync(faceTextureUrl);
+          faceGltf.scene.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
               const mesh = child as THREE.Mesh;
-              // Apply clothing texture to body meshes
+              (mesh.material as THREE.MeshStandardMaterial).map = texture;
+              (mesh.material as THREE.MeshStandardMaterial).needsUpdate = true;
+            }
+          });
+        } catch (error) {
+          console.error("Error loading face texture:", error);
+        }
+      }
+      
+      // Apply clothing texture to body mesh
+      if (bodyGltf && clothingTextureUrl) {
+        try {
+          const texture = await textureLoader.loadAsync(clothingTextureUrl);
+          bodyGltf.scene.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
+              (mesh.material as THREE.MeshStandardMaterial).map = texture;
+              (mesh.material as THREE.MeshStandardMaterial).needsUpdate = true;
+            }
+          });
+        } catch (error) {
+          console.error("Error loading clothing texture:", error);
+        }
+      }
+      
+      // Legacy: Apply clothing texture to single mesh
+      if (legacyGltf && clothingTextureUrl) {
+        try {
+          const texture = await textureLoader.loadAsync(clothingTextureUrl);
+          legacyGltf.scene.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh;
               if (mesh.name.toLowerCase().includes('body') || 
                   mesh.name.toLowerCase().includes('torso') ||
                   mesh.name.toLowerCase().includes('shirt')) {
@@ -34,10 +72,18 @@ function AvatarModel({ meshUrl, clothingTextureUrl }: RealisticAvatar3DProps) {
               }
             }
           });
-        });
+        } catch (error) {
+          console.error("Error loading clothing texture:", error);
+        }
       }
+      
+      setIsLoading(false);
+    };
+    
+    if (faceGltf || bodyGltf || legacyGltf) {
+      loadTextures();
     }
-  }, [scene, clothingTextureUrl]);
+  }, [faceGltf, bodyGltf, legacyGltf, faceTextureUrl, clothingTextureUrl]);
 
   // Gentle idle animation
   useFrame((state) => {
@@ -52,12 +98,14 @@ function AvatarModel({ meshUrl, clothingTextureUrl }: RealisticAvatar3DProps) {
 
   return (
     <group ref={groupRef}>
-      <primitive object={scene} scale={1.5} position={[0, -1, 0]} />
+      {bodyGltf && <primitive object={bodyGltf.scene} scale={1.5} position={[0, -1, 0]} />}
+      {faceGltf && <primitive object={faceGltf.scene} scale={0.15} position={[0, 0.6, 0]} />}
+      {legacyGltf && !bodyGltf && !faceGltf && <primitive object={legacyGltf.scene} scale={1.5} position={[0, -1, 0]} />}
     </group>
   );
 }
 
-export function RealisticAvatar3D({ meshUrl, clothingTextureUrl }: RealisticAvatar3DProps) {
+export function RealisticAvatar3D({ faceMeshUrl, bodyMeshUrl, faceTextureUrl, clothingTextureUrl, meshUrl }: RealisticAvatar3DProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   return (
@@ -79,7 +127,13 @@ export function RealisticAvatar3D({ meshUrl, clothingTextureUrl }: RealisticAvat
         <directionalLight position={[-10, -10, -5]} intensity={0.5} />
         <pointLight position={[0, 5, 0]} intensity={0.5} />
         
-        <AvatarModel meshUrl={meshUrl} clothingTextureUrl={clothingTextureUrl} />
+        <AvatarModel 
+          faceMeshUrl={faceMeshUrl}
+          bodyMeshUrl={bodyMeshUrl}
+          faceTextureUrl={faceTextureUrl}
+          clothingTextureUrl={clothingTextureUrl}
+          meshUrl={meshUrl}
+        />
         
         <OrbitControls
           enablePan={false}

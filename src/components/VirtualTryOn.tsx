@@ -19,7 +19,9 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
   const [measurements, setMeasurements] = useState<BodyMeasurements | null>(null);
   const [clothingTextureUrl, setClothingTextureUrl] = useState<string | null>(null);
   const [enhancedPersonImageUrl, setEnhancedPersonImageUrl] = useState<string | null>(null);
-  const [mesh3DUrl, setMesh3DUrl] = useState<string | null>(null);
+  const [faceMeshUrl, setFaceMeshUrl] = useState<string | null>(null);
+  const [bodyMeshUrl, setBodyMeshUrl] = useState<string | null>(null);
+  const [faceTextureUrl, setFaceTextureUrl] = useState<string | null>(null);
   const [aiResponse, setAiResponse] = useState<any>({});
 
   // Extract body measurements and generate enhanced texture when person image is loaded
@@ -59,18 +61,15 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
         if (response.error) {
           console.error("Replicate API error:", response.error);
           toast.error("Failed to generate avatar with Replicate AI");
-        } else if (response.mesh3DUrl) {
-          console.log("3D mesh received:", response.mesh3DUrl);
-          setMesh3DUrl(response.mesh3DUrl);
-          setEnhancedPersonImageUrl(response.enhancedTextureUrl);
-          toast.success("Production-quality 3D avatar generated!");
-        } else if (response.enhancedTextureUrl) {
-          console.log("AI-enhanced texture received:", response.enhancedTextureUrl.substring(0, 50) + "...");
-          setEnhancedPersonImageUrl(response.enhancedTextureUrl);
-          toast.success("Photo enhanced with Replicate AI!");
+        } else if (response.faceMeshUrl && response.bodyMeshUrl) {
+          console.log("Face and body meshes received");
+          setFaceMeshUrl(response.faceMeshUrl);
+          setBodyMeshUrl(response.bodyMeshUrl);
+          setFaceTextureUrl(response.faceTextureUrl);
+          toast.success("3D avatar with face and body generated!");
         } else {
-          console.log("No enhanced texture in response:", response);
-          toast.success("3D avatar generated from your photo!");
+          console.log("Unexpected response format:", response);
+          toast.error("Failed to generate 3D avatar");
         }
       } catch (error) {
         console.error("Error processing photo:", error);
@@ -140,9 +139,11 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
             </div>
             
             {measurements && !aiResponse.error ? (
-              mesh3DUrl ? (
+              faceMeshUrl && bodyMeshUrl ? (
                 <RealisticAvatar3D 
-                  meshUrl={mesh3DUrl}
+                  faceMeshUrl={faceMeshUrl}
+                  bodyMeshUrl={bodyMeshUrl}
+                  faceTextureUrl={faceTextureUrl}
                   clothingTextureUrl={clothingTextureUrl}
                 />
               ) : (

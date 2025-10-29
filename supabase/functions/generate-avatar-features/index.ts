@@ -30,28 +30,41 @@ serve(async (req) => {
       auth: REPLICATE_API_KEY,
     });
 
-    console.log('Enhancing photo with CodeFormer...');
+    console.log('Generating face mesh with DECA and body mesh with PIFuHD...');
     
-    // Use CodeFormer for face enhancement and restoration
-    const enhanced = await replicate.run(
-      "sczhou/codeformer:cc4956dd26fa5a7185d5660cc9100fab1b8070a1d1654a8bb5eb6d443b020bb2",
-      {
-        input: {
+    // Run both models in parallel for faster processing
+    const [decaResult, pifuhdResult] = await Promise.all([
+      // DECA for face mesh + texture
+      replicate.run("akinyemi-evan/deca-face", {
+        input: { image: personImageBase64 }
+      }),
+      // PIFuHD for full body mesh
+      replicate.run("akinyemi-evan/pifuhd-body", {
+        input: { 
           image: personImageBase64,
-          codeformer_fidelity: 0.9,
-          background_enhance: true,
-          face_upsample: true,
-          upscale: 2
+          resolution: 256
         }
-      }
-    ) as string;
+      })
+    ]);
 
-    console.log('Photo enhanced successfully:', enhanced);
+    console.log('DECA result:', decaResult);
+    console.log('PIFuHD result:', pifuhdResult);
+
+    // Extract URLs from results
+    const faceMeshUrl = (decaResult as any)?.mesh || null;
+    const faceTextureUrl = (decaResult as any)?.texture || null;
+    const bodyMeshUrl = pifuhdResult as string || null;
+
+    if (!faceMeshUrl || !bodyMeshUrl) {
+      throw new Error('Failed to generate 3D meshes');
+    }
 
     return new Response(
       JSON.stringify({ 
-        enhancedTextureUrl: enhanced,
-        message: 'Photo enhanced with CodeFormer'
+        faceMeshUrl,
+        faceTextureUrl,
+        bodyMeshUrl,
+        message: '3D avatar generated successfully'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
