@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -18,6 +18,30 @@ export const Navigation = () => {
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const navRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateNavHeight = () => {
+      if (navRef.current) {
+        const height = navRef.current.offsetHeight;
+        document.documentElement.style.setProperty('--nav-height', `${height}px`);
+      }
+    };
+
+    updateNavHeight();
+
+    let resizeTimeout: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(updateNavHeight, 100);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
+    };
+  }, [isScrolled, session, location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,15 +68,15 @@ export const Navigation = () => {
 
   const scrollToSection = (sectionId: string) => {
     const targetId = sectionId === 'features' ? 'features-section' : sectionId;
+    const navHeight = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-height')) || 96;
     
     if (location.pathname !== "/") {
       navigate("/");
       setTimeout(() => {
         const element = document.getElementById(targetId);
         if (element) {
-          const offset = 80;
           const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - offset;
+          const offsetPosition = elementPosition + window.pageYOffset - navHeight;
           window.scrollTo({
             top: offsetPosition,
             behavior: "smooth",
@@ -62,9 +86,8 @@ export const Navigation = () => {
     } else {
       const element = document.getElementById(targetId);
       if (element) {
-        const offset = 80;
         const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        const offsetPosition = elementPosition + window.pageYOffset - navHeight;
         window.scrollTo({
           top: offsetPosition,
           behavior: "smooth",
@@ -81,15 +104,13 @@ export const Navigation = () => {
 
   return (
     <nav
+      ref={navRef}
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
           ? "bg-card/95 backdrop-blur-md border-b border-border shadow-card"
           : "bg-background/80 backdrop-blur-sm"
       )}
-      style={{
-        height: "80px",
-      }}
     >
       <div className="container mx-auto px-4 h-full flex items-center justify-between">
         <button

@@ -56,7 +56,7 @@ const MyWardrobe = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="pt-28 p-4 md:p-8">
+      <div className="pt-[var(--nav-height)] p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-4xl font-serif font-bold">My Wardrobe</h1>

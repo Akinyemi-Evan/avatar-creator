@@ -8,6 +8,7 @@ All colors MUST be HSL. Light, elegant, playful with polka dots.
 
 @layer base {
   :root {
+    --nav-height: 96px;
     /* Kusama meets MET Gala Color System - Light & Elegant */
     --background: 0 0 98;  /* Crisp white/off-white (gallery walls) */
     --foreground: 220 20 15;  /* Deep charcoal text */
@@ -115,9 +116,9 @@ All colors MUST be HSL. Light, elegant, playful with polka dots.
     @apply border-border;
   }
   
-  html {
-    scroll-behavior: smooth;
-    scroll-padding-top: 80px;
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: var(--nav-height);
   }
   
   body {
