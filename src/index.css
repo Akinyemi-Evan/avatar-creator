@@ -114,6 +114,12 @@ All colors MUST be HSL. Sophisticated monochrome with bold accent pops.
   * {
     @apply border-border;
   }
+  
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px; /* Account for fixed nav height */
+  }
+  
   body {
     @apply bg-background text-foreground;
     font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;

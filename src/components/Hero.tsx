@@ -1,7 +1,49 @@
+import { useState } from "react";
 import heroBanner from "@/assets/hero-banner.jpg";
 import { Camera, Sparkles, ShoppingBag } from "lucide-react";
+import { FeatureModal } from "@/components/FeatureModal";
+
+type FeatureType = "capture" | "process" | "experience" | null;
 
 export const Hero = () => {
+  const [openFeature, setOpenFeature] = useState<FeatureType>(null);
+
+  const scrollToCapture = () => {
+    setOpenFeature(null);
+    setTimeout(() => {
+      const element = document.getElementById("capture-section");
+      if (element) {
+        const offset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
+    }, 100);
+  };
+
+  const featureContent = {
+    capture: {
+      title: "CAPTURE YOUR ESSENCE",
+      description: "Precision body analysis powered by AI",
+      content:
+        "We take your photo and use advanced AI to analyze your body measurements. Our system maps 23+ key points on your body to create an accurate digital profile. This ensures your virtual try-on experience is as realistic as possible.",
+    },
+    process: {
+      title: "PROCESS WITH AI PRECISION",
+      description: "Transform your photo into a 3D masterpiece",
+      content:
+        "Our AI processes your photo and measurements to create a stunning 3D replica of you. Using cutting-edge DECA face reconstruction and PIFuHD body modeling, we generate a photorealistic avatar that captures your unique proportions and features.",
+    },
+    experience: {
+      title: "EXPERIENCE ENDLESS POSSIBILITIES",
+      description: "See how any outfit looks on you",
+      content:
+        "Customize your 3D avatar with any clothing from the internet. Simply paste a product URL, and watch as AI seamlessly fits the garment to your digital twin. See exactly how clothes will look and fit on your body before making a purchase - no more sizing guesswork.",
+    },
+  };
   return (
     <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden">
       {/* Dark base with subtle gradient */}
@@ -57,46 +99,67 @@ export const Hero = () => {
             <span className="text-accent font-semibold">AI-powered</span> virtual try-on
           </p>
           
-          {/* Features - Gallery Plaques Style */}
+          {/* Features - Gallery Plaques Style - Now Clickable */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8">
-            <div className="group gallery-card p-8 hover:border-primary/50 transition-all duration-300 ink-spread">
+            <button
+              onClick={() => setOpenFeature("capture")}
+              className="group gallery-card p-8 hover:border-primary/50 transition-all duration-300 ink-spread cursor-pointer text-left"
+            >
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <Camera className="w-10 h-10 text-primary" />
                   <div className="absolute -inset-2 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div className="space-y-1 text-center">
-                  <span className="font-accent text-lg text-foreground block">CAPTURE</span>
-                  <span className="text-xs text-muted-foreground font-body">Take Your Photo</span>
+                  <span className="font-accent text-lg text-foreground block">
+                    CAPTURE
+                  </span>
+                  <span className="text-xs text-muted-foreground font-body">
+                    Take Your Photo
+                  </span>
                 </div>
               </div>
-            </div>
-            
-            <div className="group gallery-card p-8 border-primary/30 hover:border-primary transition-all duration-300 ink-spread">
+            </button>
+
+            <button
+              onClick={() => setOpenFeature("process")}
+              className="group gallery-card p-8 border-primary/30 hover:border-primary transition-all duration-300 ink-spread cursor-pointer text-left"
+            >
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <Sparkles className="w-10 h-10 text-secondary" />
                   <div className="absolute -inset-2 bg-secondary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div className="space-y-1 text-center">
-                  <span className="font-accent text-lg text-foreground block">PROCESS</span>
-                  <span className="text-xs text-muted-foreground font-body">AI Magic Happens</span>
+                  <span className="font-accent text-lg text-foreground block">
+                    PROCESS
+                  </span>
+                  <span className="text-xs text-muted-foreground font-body">
+                    AI Magic Happens
+                  </span>
                 </div>
               </div>
-            </div>
-            
-            <div className="group gallery-card p-8 hover:border-primary/50 transition-all duration-300 ink-spread">
+            </button>
+
+            <button
+              onClick={() => setOpenFeature("experience")}
+              className="group gallery-card p-8 hover:border-primary/50 transition-all duration-300 ink-spread cursor-pointer text-left"
+            >
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
                   <ShoppingBag className="w-10 h-10 text-accent" />
                   <div className="absolute -inset-2 bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <div className="space-y-1 text-center">
-                  <span className="font-accent text-lg text-foreground block">EXPERIENCE</span>
-                  <span className="text-xs text-muted-foreground font-body">Try Any Outfit</span>
+                  <span className="font-accent text-lg text-foreground block">
+                    EXPERIENCE
+                  </span>
+                  <span className="text-xs text-muted-foreground font-body">
+                    Try Any Outfit
+                  </span>
                 </div>
               </div>
-            </div>
+            </button>
           </div>
           
           {/* Manifesto tagline */}
@@ -108,6 +171,18 @@ export const Hero = () => {
       
       {/* Gallery spotlight effect */}
       <div className="spotlight absolute inset-0 pointer-events-none z-5" />
+
+      {/* Feature Modals */}
+      {openFeature && (
+        <FeatureModal
+          open={openFeature !== null}
+          onOpenChange={(open) => !open && setOpenFeature(null)}
+          title={featureContent[openFeature].title}
+          description={featureContent[openFeature].description}
+          content={featureContent[openFeature].content}
+          onStartClick={scrollToCapture}
+        />
+      )}
     </section>
   );
 };

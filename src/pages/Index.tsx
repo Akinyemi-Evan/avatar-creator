@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { VirtualTryOn } from "@/components/VirtualTryOn";
@@ -14,9 +15,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen">
+      <Navigation />
       <Hero />
       
-      <PhotoUpload onPhotoProcessed={handlePhotoProcessed} />
+      <section id="capture-section">
+        <PhotoUpload onPhotoProcessed={handlePhotoProcessed} />
+      </section>
       
       {personImageUrl && originalImageUrl && (
         <VirtualTryOn 
