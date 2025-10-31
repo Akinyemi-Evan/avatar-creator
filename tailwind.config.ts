@@ -65,8 +65,8 @@ export default {
       },
       fontFamily: {
         display: ["Playfair Display", "serif"],
-        body: ["Space Grotesk", "system-ui", "sans-serif"],
-        accent: ["Bebas Neue", "sans-serif"],
+        body: ["Inter", "system-ui", "sans-serif"],
+        accent: ["Outfit", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {
@@ -85,42 +85,31 @@ export default {
             height: "0",
           },
         },
-        glitch: {
-          "0%, 100%": { transform: "translate(0)" },
-          "20%": { transform: "translate(-2px, 2px)" },
-          "40%": { transform: "translate(2px, -2px)" },
-          "60%": { transform: "translate(-2px, -2px)" },
-          "80%": { transform: "translate(2px, 2px)" },
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-10px)" },
         },
-        sprayPaint: {
-          "0%": {
-            opacity: "0",
-            transform: "scale(0.8) rotate(-5deg)",
-            filter: "blur(4px)",
-          },
-          "100%": {
-            opacity: "1",
-            transform: "scale(1) rotate(0)",
-            filter: "blur(0)",
-          },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
         },
-        stencilFade: {
-          "0%": {
-            opacity: "0",
-            clipPath: "polygon(0 0, 100% 0, 100% 0, 0 0)",
-          },
-          "100%": {
-            opacity: "1",
-            clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
-          },
+        "soft-scale": {
+          "0%": { transform: "scale(0.95)", opacity: "0" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "dot-bloom": {
+          "0%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.2)" },
+          "100%": { transform: "scale(1)" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        glitch: "glitch 1s infinite",
-        "spray-paint": "sprayPaint 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
-        "stencil-fade": "stencilFade 0.8s ease-out",
+        float: "float 3s ease-in-out infinite",
+        "fade-in": "fade-in 0.5s ease-out",
+        "soft-scale": "soft-scale 0.3s ease-out",
+        "dot-bloom": "dot-bloom 2s ease-in-out infinite",
       },
     },
   },

@@ -45,8 +45,8 @@ export const Hero = () => {
     },
   };
   return (
-    <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden">
-      {/* Dark base with subtle gradient */}
+    <section className="relative min-h-[75vh] flex items-center justify-center overflow-hidden polka-pattern">
+      {/* Light background with subtle gradient */}
       <div 
         className="absolute inset-0 z-0 bg-background"
         style={{ 
@@ -54,67 +54,61 @@ export const Hero = () => {
         }}
       />
       
-      {/* Hero banner image with dramatic overlay */}
+      {/* Hero banner image with light overlay */}
       <img 
         src={heroBanner} 
         alt="Virtual Try-On Studio" 
-        className="absolute inset-0 w-full h-full object-cover z-0 opacity-20 mix-blend-overlay"
-        style={{ filter: 'grayscale(100%) contrast(1.2)' }}
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-[0.08] mix-blend-multiply"
       />
       
-      {/* Spray paint splatter decorations */}
-      <div className="absolute top-20 left-10 w-3 h-3 rounded-full bg-primary opacity-60 blur-[2px]" />
-      <div className="absolute top-32 right-16 w-2 h-2 rounded-full bg-secondary opacity-40 blur-[1px]" />
-      <div className="absolute bottom-24 left-1/4 w-4 h-4 rounded-full bg-accent opacity-50 blur-[2px]" />
-      
-      {/* Halftone pattern overlay */}
-      <div className="absolute inset-0 z-0 opacity-[0.02]" style={{
-        backgroundImage: 'radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)',
-        backgroundSize: '20px 20px'
-      }} />
+      {/* Floating polka dot decorations */}
+      <div className="absolute top-20 left-10 w-8 h-8 rounded-full bg-primary opacity-20 animate-float" />
+      <div className="absolute top-32 right-16 w-6 h-6 rounded-full bg-secondary opacity-15 animate-float" style={{ animationDelay: '0.5s' }} />
+      <div className="absolute bottom-24 left-1/4 w-10 h-10 rounded-full bg-accent opacity-15 animate-float" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-1/2 right-1/4 w-4 h-4 rounded-full bg-primary opacity-25 animate-dot-bloom" />
       
       {/* Content */}
       <div className="container mx-auto px-4 py-20 relative z-10">
         <div className="max-w-5xl mx-auto text-center space-y-12">
-          {/* Main Heading - Stencil Style */}
-          <div className="space-y-4 stencil-fade">
-            <h1 className="font-display text-6xl md:text-8xl font-black text-foreground leading-[0.95] text-stencil tracking-tight">
+          {/* Main Heading - Elegant Display */}
+          <div className="space-y-6 fade-in">
+            <h1 className="font-display text-6xl md:text-8xl font-black text-foreground leading-[0.95] text-elegant tracking-tight">
               TRY BEFORE
-              <span className="block text-primary" style={{ textShadow: '0 0 40px hsla(0, 72%, 63%, 0.5)' }}>
+              <span className="block bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent" style={{ WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 YOU BUY
               </span>
             </h1>
             
-            {/* Accent line */}
-            <div className="flex items-center justify-center gap-4">
-              <div className="h-[2px] w-20 bg-primary" />
-              <div className="h-1 w-1 rounded-full bg-secondary" />
-              <div className="h-[2px] w-20 bg-primary" />
+            {/* Polka dot accent line */}
+            <div className="flex items-center justify-center gap-3">
+              <div className="h-[2px] w-24 bg-primary rounded-full" />
+              <div className="h-2 w-2 rounded-full bg-secondary animate-dot-bloom" />
+              <div className="h-[2px] w-24 bg-accent rounded-full" />
             </div>
           </div>
           
-          {/* Subheading - Editorial Style */}
-          <p className="font-body text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed font-light spray-paint-in">
+          {/* Subheading - Clean Editorial Style */}
+          <p className="font-body text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
             Upload your photo, select any clothing from the web, and see how it looks on you instantly with{" "}
-            <span className="text-accent font-semibold">AI-powered</span> virtual try-on
+            <span className="text-primary font-semibold">AI-powered</span> virtual try-on
           </p>
           
-          {/* Features - Gallery Plaques Style - Now Clickable */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8">
+          {/* Features - Kusama-inspired Cards - Now Clickable */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8 animate-soft-scale" style={{ animationDelay: '0.4s' }}>
             <button
               onClick={() => setOpenFeature("capture")}
-              className="group gallery-card p-8 hover:border-primary/50 transition-all duration-300 ink-spread cursor-pointer text-left"
+              className="group gallery-card p-8 hover:shadow-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left bg-card hover:bg-card/80"
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
-                  <Camera className="w-10 h-10 text-primary" />
-                  <div className="absolute -inset-2 bg-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Camera className="w-12 h-12 text-primary relative z-10" />
                 </div>
-                <div className="space-y-1 text-center">
-                  <span className="font-accent text-lg text-foreground block">
+                <div className="space-y-2 text-center">
+                  <span className="font-accent text-xl text-foreground block font-semibold">
                     CAPTURE
                   </span>
-                  <span className="text-xs text-muted-foreground font-body">
+                  <span className="text-sm text-muted-foreground font-body">
                     Take Your Photo
                   </span>
                 </div>
@@ -123,18 +117,18 @@ export const Hero = () => {
 
             <button
               onClick={() => setOpenFeature("process")}
-              className="group gallery-card p-8 border-primary/30 hover:border-primary transition-all duration-300 ink-spread cursor-pointer text-left"
+              className="group gallery-card p-8 hover:shadow-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left bg-card hover:bg-card/80"
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
-                  <Sparkles className="w-10 h-10 text-secondary" />
-                  <div className="absolute -inset-2 bg-secondary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-secondary/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Sparkles className="w-12 h-12 text-secondary relative z-10" />
                 </div>
-                <div className="space-y-1 text-center">
-                  <span className="font-accent text-lg text-foreground block">
+                <div className="space-y-2 text-center">
+                  <span className="font-accent text-xl text-foreground block font-semibold">
                     PROCESS
                   </span>
-                  <span className="text-xs text-muted-foreground font-body">
+                  <span className="text-sm text-muted-foreground font-body">
                     AI Magic Happens
                   </span>
                 </div>
@@ -143,18 +137,18 @@ export const Hero = () => {
 
             <button
               onClick={() => setOpenFeature("experience")}
-              className="group gallery-card p-8 hover:border-primary/50 transition-all duration-300 ink-spread cursor-pointer text-left"
+              className="group gallery-card p-8 hover:shadow-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left bg-card hover:bg-card/80"
             >
               <div className="flex flex-col items-center gap-4">
                 <div className="relative">
-                  <ShoppingBag className="w-10 h-10 text-accent" />
-                  <div className="absolute -inset-2 bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="absolute inset-0 bg-accent/20 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ShoppingBag className="w-12 h-12 text-accent relative z-10" />
                 </div>
-                <div className="space-y-1 text-center">
-                  <span className="font-accent text-lg text-foreground block">
+                <div className="space-y-2 text-center">
+                  <span className="font-accent text-xl text-foreground block font-semibold">
                     EXPERIENCE
                   </span>
-                  <span className="text-xs text-muted-foreground font-body">
+                  <span className="text-sm text-muted-foreground font-body">
                     Try Any Outfit
                   </span>
                 </div>
@@ -162,14 +156,14 @@ export const Hero = () => {
             </button>
           </div>
           
-          {/* Manifesto tagline */}
-          <p className="font-accent text-sm text-muted-foreground tracking-wider pt-8">
-            WHERE STREET ART MEETS HIGH FASHION
+          {/* Elegant tagline */}
+          <p className="font-accent text-sm text-muted-foreground tracking-wide pt-8 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+            WHERE ART MEETS INNOVATION
           </p>
         </div>
       </div>
       
-      {/* Gallery spotlight effect */}
+      {/* Soft spotlight effect */}
       <div className="spotlight absolute inset-0 pointer-events-none z-5" />
 
       {/* Feature Modals */}

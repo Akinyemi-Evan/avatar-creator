@@ -223,11 +223,10 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
               
               {/* Apply Button */}
               <Button
-                variant="stencil"
+                variant="kusama"
                 onClick={() => handleTryOn(clothingUrl)}
                 disabled={isLoading || !clothingUrl || !measurements}
-                className="w-full h-14 text-lg bg-primary text-primary-foreground border-primary-foreground"
-                style={{ boxShadow: '3px 3px 0 hsl(var(--background)), 6px 6px 0 hsl(var(--primary))' }}
+                className="w-full h-14 text-lg"
               >
                 {isLoading ? (
                   <div className="flex items-center gap-3">

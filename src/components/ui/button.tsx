@@ -9,14 +9,14 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90 rounded-sm font-accent tracking-wide",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-sm",
-        outline: "border-2 border-border bg-card text-foreground hover:bg-border hover:text-foreground rounded-sm",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-sm font-accent tracking-wide",
-        ghost: "hover:bg-muted hover:text-foreground rounded-sm",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-lg font-accent tracking-wide rounded-full",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-full",
+        outline: "border-2 border-border bg-transparent text-foreground hover:bg-muted rounded-full",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/90 hover:shadow-lg font-accent tracking-wide rounded-full",
+        ghost: "hover:bg-muted hover:text-foreground rounded-full",
         link: "text-primary underline-offset-4 hover:underline",
-        stencil: "font-accent tracking-widest uppercase border-2 border-current rounded-none hover:shadow-[3px_3px_0_hsl(var(--background)),6px_6px_0_currentColor] transition-all hover:translate-x-[2px] hover:translate-y-[2px]",
-        graffiti: "bg-primary text-primary-foreground border-2 border-primary-foreground/20 rounded-sm relative overflow-hidden hover:shadow-[0_0_20px_hsl(var(--primary))] transition-all",
+        kusama: "bg-primary text-primary-foreground hover:shadow-[0_8px_24px_hsla(45,95%,58%,0.4)] hover:scale-105 transition-all font-accent tracking-wide rounded-full",
+        polka: "bg-card border-2 border-primary text-foreground hover:bg-primary hover:text-primary-foreground transition-all rounded-full relative overflow-hidden before:absolute before:inset-0 before:bg-[radial-gradient(circle,hsl(var(--primary))_1px,transparent_1px)] before:bg-[length:8px_8px] before:opacity-20",
       },
       size: {
         default: "h-10 px-6 py-2",

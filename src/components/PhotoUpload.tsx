@@ -83,10 +83,9 @@ export const PhotoUpload = ({ onPhotoProcessed }: PhotoUploadProps) => {
               {/* Camera Button - Stencil Style */}
               <Button
                 size="lg"
-                variant="stencil"
+                variant="kusama"
                 onClick={() => cameraInputRef.current?.click()}
-                className="h-40 flex flex-col gap-4 bg-primary text-primary-foreground border-primary-foreground"
-                style={{ boxShadow: '3px 3px 0 hsl(var(--background)), 6px 6px 0 hsl(var(--primary))' }}
+                className="h-40 flex flex-col gap-4"
               >
                 <Camera className="w-12 h-12" />
                 <span className="font-accent text-xl tracking-widest">CAPTURE</span>
