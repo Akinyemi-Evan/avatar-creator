@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -146,8 +147,10 @@ const Capture = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="pt-24 p-4 md:p-8">
+        <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-serif font-bold">Create Your Avatar</h1>
           <p className="text-muted-foreground">Capture or upload a photo to get started</p>
@@ -263,6 +266,7 @@ const Capture = () => {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </div>
   );

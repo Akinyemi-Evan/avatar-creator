@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -100,8 +101,10 @@ const Favorites = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="pt-24 p-4 md:p-8">
+        <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="text-4xl font-serif font-bold">Favorite Outfits</h1>
           <p className="text-muted-foreground">Your saved outfit combinations</p>
@@ -204,6 +207,7 @@ const Favorites = () => {
             ))}
           </div>
         )}
+        </div>
       </div>
 
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
