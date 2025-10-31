@@ -63,6 +63,11 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        display: ["Playfair Display", "serif"],
+        body: ["Space Grotesk", "system-ui", "sans-serif"],
+        accent: ["Bebas Neue", "sans-serif"],
+      },
       keyframes: {
         "accordion-down": {
           from: {
@@ -80,10 +85,42 @@ export default {
             height: "0",
           },
         },
+        glitch: {
+          "0%, 100%": { transform: "translate(0)" },
+          "20%": { transform: "translate(-2px, 2px)" },
+          "40%": { transform: "translate(2px, -2px)" },
+          "60%": { transform: "translate(-2px, -2px)" },
+          "80%": { transform: "translate(2px, 2px)" },
+        },
+        sprayPaint: {
+          "0%": {
+            opacity: "0",
+            transform: "scale(0.8) rotate(-5deg)",
+            filter: "blur(4px)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "scale(1) rotate(0)",
+            filter: "blur(0)",
+          },
+        },
+        stencilFade: {
+          "0%": {
+            opacity: "0",
+            clipPath: "polygon(0 0, 100% 0, 100% 0, 0 0)",
+          },
+          "100%": {
+            opacity: "1",
+            clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        glitch: "glitch 1s infinite",
+        "spray-paint": "sprayPaint 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "stencil-fade": "stencilFade 0.8s ease-out",
       },
     },
   },

@@ -20,18 +20,11 @@ export const PhotoUpload = ({ onPhotoProcessed }: PhotoUploadProps) => {
     setProcessingStatus("Loading image...");
     
     try {
-      // Create original image URL for comparison
       const originalUrl = URL.createObjectURL(file);
-      
-      // Load image
       const img = await loadImage(file);
-      
-      // Remove background
       const { blob } = await removeBackground(img, (status) => {
         setProcessingStatus(status);
       });
-      
-      // Create processed image URL
       const processedUrl = URL.createObjectURL(blob);
       
       onPhotoProcessed(processedUrl, originalUrl);
@@ -54,51 +47,63 @@ export const PhotoUpload = ({ onPhotoProcessed }: PhotoUploadProps) => {
   };
 
   return (
-    <section className="container mx-auto px-4 py-12">
-      <Card 
-        className="max-w-2xl mx-auto p-8 border-2"
-        style={{ 
-          boxShadow: 'var(--shadow-card)',
-          borderColor: 'hsl(var(--border))'
-        }}
-      >
-        <div className="space-y-6">
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold bg-clip-text text-transparent" style={{ backgroundImage: 'var(--gradient-primary)' }}>
-              Upload Your Photo
-            </h2>
-            <p className="text-muted-foreground">
-              Take a photo or upload one to get started
+    <section className="container mx-auto px-4 py-16">
+      <Card className="max-w-2xl mx-auto contact-sheet border-graffiti spray-paint-in">
+        <div className="p-10 space-y-8">
+          {/* Title - Gallery Label Style */}
+          <div className="text-center space-y-4">
+            <div className="inline-block">
+              <h2 className="font-display text-4xl font-bold text-foreground relative">
+                SUBJECT CAPTURE
+                <div className="absolute -bottom-2 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent" />
+              </h2>
+            </div>
+            <p className="font-body text-muted-foreground text-sm tracking-wide">
+              PHOTOGRAPH REQUIRED FOR SPECIMEN ANALYSIS
             </p>
           </div>
           
           {isProcessing ? (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <Loader2 className="w-12 h-12 text-primary animate-spin" />
-              <p className="text-sm text-muted-foreground">{processingStatus}</p>
+            <div className="flex flex-col items-center justify-center py-16 space-y-6">
+              <div className="relative">
+                <Loader2 className="w-16 h-16 text-primary animate-spin" />
+                <div className="absolute inset-0 bg-primary/20 blur-xl animate-pulse" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="font-accent text-lg tracking-wider text-primary">{processingStatus}</p>
+                <div className="flex gap-1 justify-center">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse delay-100" />
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse delay-200" />
+                </div>
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Camera Button */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Camera Button - Stencil Style */}
               <Button
                 size="lg"
+                variant="stencil"
                 onClick={() => cameraInputRef.current?.click()}
-                className="h-32 flex flex-col gap-3 bg-primary hover:bg-primary/90"
-                style={{ boxShadow: 'var(--shadow-glow)' }}
+                className="h-40 flex flex-col gap-4 bg-primary text-primary-foreground border-primary-foreground"
+                style={{ boxShadow: '3px 3px 0 hsl(var(--background)), 6px 6px 0 hsl(var(--primary))' }}
               >
-                <Camera className="w-8 h-8" />
-                <span className="font-semibold">Take Photo</span>
+                <Camera className="w-12 h-12" />
+                <span className="font-accent text-xl tracking-widest">CAPTURE</span>
               </Button>
               
-              {/* Upload Button */}
+              {/* Upload Button - Gallery Frame Style */}
               <Button
                 size="lg"
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
-                className="h-32 flex flex-col gap-3 border-2 hover:bg-accent/10"
+                className="h-40 flex flex-col gap-4 border-2 border-border hover:border-secondary group relative overflow-hidden"
               >
-                <Upload className="w-8 h-8" />
-                <span className="font-semibold">Upload Photo</span>
+                <div className="absolute inset-0 bg-secondary/0 group-hover:bg-secondary/5 transition-colors" />
+                <Upload className="w-12 h-12 text-muted-foreground group-hover:text-secondary transition-colors relative z-10" />
+                <span className="font-accent text-xl tracking-widest text-muted-foreground group-hover:text-foreground transition-colors relative z-10">
+                  UPLOAD
+                </span>
               </Button>
               
               {/* Hidden file inputs */}
@@ -120,9 +125,12 @@ export const PhotoUpload = ({ onPhotoProcessed }: PhotoUploadProps) => {
             </div>
           )}
           
-          <p className="text-xs text-center text-muted-foreground">
-            Best results with full-body photos in good lighting
-          </p>
+          {/* Instructions - Gallery Plaque Style */}
+          <div className="border-t border-border pt-6">
+            <p className="font-body text-xs text-center text-muted-foreground tracking-wide uppercase">
+              Optimal results with full-body photographs • Natural lighting recommended
+            </p>
+          </div>
         </div>
       </Card>
     </section>

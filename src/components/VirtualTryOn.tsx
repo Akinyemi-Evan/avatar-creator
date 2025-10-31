@@ -27,10 +27,8 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
   const [error, setError] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState<string>("");
   
-  // Track blob URLs for cleanup
   const blobUrlsRef = useRef<string[]>([]);
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => {
       blobUrlsRef.current.forEach(url => URL.revokeObjectURL(url));
@@ -47,7 +45,6 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
       setLoadingProgress("Converting image...");
 
       try {
-        // Convert image URL to base64
         const response = await fetch(personImageUrl);
         const blob = await response.blob();
         const base64 = await new Promise<string>((resolve) => {
@@ -57,12 +54,10 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
         });
 
         setLoadingProgress("Extracting measurements...");
-        // Extract measurements first (fast operation)
         const measurementsData = await extractBodyMeasurements(personImageUrl);
         setMeasurements(measurementsData);
 
         setLoadingProgress("Generating 3D avatar (this may take up to 60s)...");
-        // Generate 3D meshes (slow operation)
         const avatarData = await supabase.functions.invoke('generate-avatar-features', {
           body: { personImageBase64: base64 }
         });
@@ -103,7 +98,6 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
       return;
     }
 
-    // Validate URL format and security
     const validation = validateImageUrl(clothingUrl);
     if (!validation.isValid) {
       toast.error(validation.error || "Invalid clothing image URL");
@@ -115,9 +109,7 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
     console.log('Loading clothing texture:', clothingUrl);
     
     try {
-      // Preload image with timeout and CORS handling
       await loadImageWithTimeout(clothingUrl, TIMEOUT_CONFIG.textureLoading);
-      
       setClothingTextureUrl(clothingUrl);
       console.log('Clothing texture applied successfully');
       toast.success("Clothing applied successfully!");
@@ -138,78 +130,128 @@ export const VirtualTryOn = ({ personImageUrl, originalImageUrl }: VirtualTryOnP
   };
 
   return (
-    <div className="container mx-auto px-4 py-12">
-      <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        {/* Avatar Display */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Your 3D Avatar</CardTitle>
-            <CardDescription>Generated from your photo</CardDescription>
+    <div className="container mx-auto px-4 py-16">
+      <div className="grid md:grid-cols-2 gap-8 max-w-7xl mx-auto">
+        {/* Avatar Display - Gallery Presentation */}
+        <Card className="border-graffiti overflow-hidden stencil-fade">
+          <CardHeader className="border-b border-border bg-card/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="font-display text-3xl">Specimen 3D</CardTitle>
+                <CardDescription className="font-accent text-xs tracking-wider mt-2">
+                  RECONSTRUCTED FROM PHOTOGRAPH
+                </CardDescription>
+              </div>
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-8 spotlight">
             {isLoading && (
-              <div className="flex flex-col items-center justify-center h-full gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="flex flex-col items-center justify-center h-[500px] gap-6">
+                <div className="relative">
+                  <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
+                </div>
                 {loadingProgress && (
-                  <p className="text-sm text-muted-foreground">{loadingProgress}</p>
+                  <div className="text-center space-y-2">
+                    <p className="font-accent text-sm tracking-wider text-primary">{loadingProgress}</p>
+                    <div className="flex gap-1 justify-center">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse delay-100" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse delay-200" />
+                    </div>
+                  </div>
                 )}
               </div>
             )}
             
             {!isLoading && error && (
-              <div className="text-center py-8">
-                <p className="text-destructive">{error}</p>
+              <div className="text-center py-16 space-y-4">
+                <div className="inline-block p-4 border-2 border-destructive/50 rounded-sm">
+                  <p className="font-accent text-destructive tracking-wide">{error}</p>
+                </div>
               </div>
             )}
             
             {!isLoading && !error && faceMeshUrl && bodyMeshUrl && (
-              <RealisticAvatar3D
-                faceMeshUrl={faceMeshUrl}
-                bodyMeshUrl={bodyMeshUrl}
-                faceTextureUrl={faceTextureUrl}
-                clothingTextureUrl={clothingTextureUrl}
-              />
+              <div className="h-[500px]">
+                <RealisticAvatar3D
+                  faceMeshUrl={faceMeshUrl}
+                  bodyMeshUrl={bodyMeshUrl}
+                  faceTextureUrl={faceTextureUrl}
+                  clothingTextureUrl={clothingTextureUrl}
+                />
+              </div>
             )}
             
             {!isLoading && !error && measurements && !faceMeshUrl && (
-              <Avatar3D
-                measurements={measurements}
-                clothingTextureUrl={clothingTextureUrl}
-                personImageUrl={personImageUrl}
-              />
+              <div className="h-[500px]">
+                <Avatar3D
+                  measurements={measurements}
+                  clothingTextureUrl={clothingTextureUrl}
+                  personImageUrl={personImageUrl}
+                />
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Clothing Try-On */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Try On Clothing</CardTitle>
-            <CardDescription>Enter a clothing image URL</CardDescription>
+        {/* Clothing Try-On - Editorial Style */}
+        <Card className="border-graffiti spray-paint-in">
+          <CardHeader className="border-b border-border bg-card/50">
+            <CardTitle className="font-display text-3xl">Garment Application</CardTitle>
+            <CardDescription className="font-accent text-xs tracking-wider mt-2">
+              PROVIDE CLOTHING SPECIMEN URL
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Input
-                type="url"
-                placeholder="https://example.com/clothing.jpg"
-                value={clothingUrl}
-                onChange={(e) => setClothingUrl(e.target.value)}
-                disabled={isLoading || !measurements}
-              />
+          <CardContent className="p-8">
+            <div className="space-y-6">
+              {/* Input Field */}
+              <div className="space-y-3">
+                <label className="font-body text-xs tracking-wider text-muted-foreground uppercase block">
+                  Image Source URL
+                </label>
+                <Input
+                  type="url"
+                  placeholder="https://example.com/clothing.jpg"
+                  value={clothingUrl}
+                  onChange={(e) => setClothingUrl(e.target.value)}
+                  disabled={isLoading || !measurements}
+                  className="border-2 border-border bg-card font-body rounded-sm h-12 focus:border-primary transition-colors"
+                />
+              </div>
+              
+              {/* Apply Button */}
               <Button
+                variant="stencil"
                 onClick={() => handleTryOn(clothingUrl)}
                 disabled={isLoading || !clothingUrl || !measurements}
-                className="w-full"
+                className="w-full h-14 text-lg bg-primary text-primary-foreground border-primary-foreground"
+                style={{ boxShadow: '3px 3px 0 hsl(var(--background)), 6px 6px 0 hsl(var(--primary))' }}
               >
                 {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Loading...
-                  </>
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>PROCESSING</span>
+                  </div>
                 ) : (
-                  "Apply Clothing"
+                  "APPLY GARMENT"
                 )}
               </Button>
+              
+              {/* Instructions */}
+              <div className="border-t border-border pt-6 mt-8">
+                <p className="font-body text-xs text-muted-foreground text-center tracking-wide uppercase leading-relaxed">
+                  Compatible with direct image URLs • CORS-enabled sources preferred
+                </p>
+              </div>
+              
+              {/* Decorative elements */}
+              <div className="flex justify-center gap-2 pt-4">
+                <div className="w-1 h-1 rounded-full bg-primary opacity-60" />
+                <div className="w-1 h-1 rounded-full bg-secondary opacity-60" />
+                <div className="w-1 h-1 rounded-full bg-accent opacity-60" />
+              </div>
             </div>
           </CardContent>
         </Card>
