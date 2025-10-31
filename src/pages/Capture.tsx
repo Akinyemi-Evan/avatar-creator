@@ -163,7 +163,7 @@ const Capture = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="pt-[var(--nav-height)] p-4 md:p-8">
+      <div className="pt-[calc(var(--nav-height)+2rem)] p-4 md:p-8">
         <div className="max-w-4xl mx-auto space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-serif font-bold">Create Your Avatar</h1>

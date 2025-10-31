@@ -112,7 +112,7 @@ export const Navigation = () => {
           : "bg-background/80 backdrop-blur-sm"
       )}
     >
-      <div className="container mx-auto px-4 h-full flex items-center justify-between">
+      <div className="container mx-auto px-4 py-6 flex items-center justify-between">
         <button
           onClick={() => navigate("/")}
           className="font-accent text-2xl text-foreground tracking-wide hover:text-primary transition-colors group"
