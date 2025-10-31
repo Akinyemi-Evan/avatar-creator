@@ -5,6 +5,7 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
+      <div aria-hidden className="h-[calc(var(--nav-height)+2rem)]" />
       <Hero />
       
       {/* Footer - Gallery Credits Style */}

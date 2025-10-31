@@ -30,18 +30,21 @@ export const Navigation = () => {
 
     updateNavHeight();
 
-    let resizeTimeout: NodeJS.Timeout;
-    const handleResize = () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(updateNavHeight, 100);
-    };
+    const resizeObserver = new ResizeObserver(() => {
+      updateNavHeight();
+    });
 
-    window.addEventListener('resize', handleResize);
+    if (navRef.current) {
+      resizeObserver.observe(navRef.current);
+    }
+
+    window.addEventListener('resize', updateNavHeight);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(resizeTimeout);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateNavHeight);
     };
-  }, [isScrolled, session, location.pathname]);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
