@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Heart, Loader2 } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { RealisticAvatar3D } from "@/components/RealisticAvatar3D";
 import { Avatar3D } from "@/components/Avatar3D";
@@ -101,36 +101,6 @@ const TryOn = () => {
       toast.error(error.message || "Failed to apply clothing");
     } finally {
       setApplyingClothing(false);
-    }
-  };
-
-  const takeSnapshot = async () => {
-    if (!selectedAvatar || !clothingTextureUrl) {
-      toast.error("Please apply clothing first");
-      return;
-    }
-
-    try {
-      // Get canvas from 3D viewer
-      const canvas = document.querySelector("canvas");
-      if (!canvas) throw new Error("No canvas found");
-
-      const snapshotData = canvas.toDataURL("image/png");
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      await supabase.from("outfit_snapshots").insert({
-        user_id: user.id,
-        avatar_id: selectedAvatar.id,
-        clothing_url: clothingTextureUrl,
-        snapshot_image: snapshotData,
-        is_favorite: false,
-      });
-
-      toast.success("Snapshot saved!");
-    } catch (error: any) {
-      toast.error(error.message || "Failed to save snapshot");
     }
   };
 
@@ -268,15 +238,14 @@ const TryOn = () => {
                 )}
               </Button>
 
-              <div className="pt-4 border-t space-y-2">
-                <Button onClick={takeSnapshot} variant="outline" className="w-full">
-                  <Camera className="mr-2" />
-                  Take Snapshot
+              <div className="pt-4 border-t">
+                <Button onClick={toggleFavorite} variant="kusama" className="w-full">
+                  <Heart className="mr-2 fill-current" />
+                  Save as Favorite
                 </Button>
-                <Button onClick={toggleFavorite} variant="outline" className="w-full">
-                  <Heart className="mr-2" />
-                  Add to Favorites
-                </Button>
+                <p className="text-xs text-muted-foreground text-center mt-2">
+                  Saves a snapshot and adds to your favorites
+                </p>
               </div>
             </CardContent>
           </Card>

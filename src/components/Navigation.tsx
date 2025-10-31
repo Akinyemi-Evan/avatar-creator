@@ -42,11 +42,13 @@ export const Navigation = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const scrollToSection = (id: string) => {
+  const scrollToSection = (sectionId: string) => {
+    const targetId = sectionId === 'features' ? 'features-section' : sectionId;
+    
     if (location.pathname !== "/") {
       navigate("/");
       setTimeout(() => {
-        const element = document.getElementById(id);
+        const element = document.getElementById(targetId);
         if (element) {
           const offset = 80;
           const elementPosition = element.getBoundingClientRect().top;
@@ -58,7 +60,7 @@ export const Navigation = () => {
         }
       }, 100);
     } else {
-      const element = document.getElementById(id);
+      const element = document.getElementById(targetId);
       if (element) {
         const offset = 80;
         const elementPosition = element.getBoundingClientRect().top;
@@ -135,7 +137,7 @@ export const Navigation = () => {
               </>
             ) : (
               <button
-                onClick={() => scrollToSection("capture-section")}
+                onClick={() => scrollToSection("features")}
                 className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
               >
                 FEATURES

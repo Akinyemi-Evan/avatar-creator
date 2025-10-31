@@ -1,33 +1,11 @@
-import { useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { Hero } from "@/components/Hero";
-import { PhotoUpload } from "@/components/PhotoUpload";
-import { VirtualTryOn } from "@/components/VirtualTryOn";
 
 const Index = () => {
-  const [personImageUrl, setPersonImageUrl] = useState<string | null>(null);
-  const [originalImageUrl, setOriginalImageUrl] = useState<string | null>(null);
-
-  const handlePhotoProcessed = (processedUrl: string, originalUrl: string) => {
-    setPersonImageUrl(processedUrl);
-    setOriginalImageUrl(originalUrl);
-  };
-
   return (
     <div className="min-h-screen">
       <Navigation />
       <Hero />
-      
-      <section id="capture-section">
-        <PhotoUpload onPhotoProcessed={handlePhotoProcessed} />
-      </section>
-      
-      {personImageUrl && originalImageUrl && (
-        <VirtualTryOn 
-          personImageUrl={personImageUrl}
-          originalImageUrl={originalImageUrl}
-        />
-      )}
       
       {/* Footer - Gallery Credits Style */}
       <footer className="border-t border-border mt-32 bg-card/30">

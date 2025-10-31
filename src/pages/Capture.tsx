@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Upload, Loader2 } from "lucide-react";
+import { Camera, Upload, Loader2, AlertCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { removeBackground } from "@/lib/backgroundRemoval";
 import { extractBodyMeasurements } from "@/lib/bodyMeasurements";
@@ -18,6 +18,7 @@ const Capture = () => {
   const [processing, setProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState("");
   const [avatarName, setAvatarName] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,6 +82,7 @@ const Capture = () => {
     }
 
     setProcessing(true);
+    setError(null);
     setProcessingStatus("Removing background...");
 
     try {
@@ -101,13 +103,18 @@ const Capture = () => {
       // Convert to base64
       const base64Data = processedImageUrl.split(",")[1];
       
-      // Call edge function
+      // Call edge function with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      
       const { data: avatarData, error: functionError } = await supabase.functions.invoke(
         "generate-avatar-features",
         {
           body: { personImageBase64: base64Data },
         }
       );
+      
+      clearTimeout(timeoutId);
 
       if (functionError) throw functionError;
 
@@ -139,11 +146,18 @@ const Capture = () => {
       navigate(`/try-on?avatar=${avatar.id}`);
     } catch (error: any) {
       console.error("Error processing avatar:", error);
-      toast.error(error.message || "Failed to create avatar");
+      const errorMessage = error.message || "Failed to create avatar";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setProcessing(false);
       setProcessingStatus("");
     }
+  };
+
+  const retryProcessing = () => {
+    setError(null);
+    processAndSaveAvatar();
   };
 
   return (
@@ -263,6 +277,25 @@ const Capture = () => {
               <Loader2 className="w-16 h-16 animate-spin text-primary" />
               <p className="text-lg font-medium">{processingStatus}</p>
               <p className="text-sm text-muted-foreground">This may take a minute...</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {error && !processing && (
+          <Card className="gallery-card max-w-md mx-auto">
+            <CardContent className="p-8 text-center space-y-4">
+              <AlertCircle className="w-12 h-12 mx-auto text-destructive" />
+              <h3 className="text-lg font-semibold">Processing Failed</h3>
+              <p className="text-sm text-muted-foreground">{error}</p>
+              <div className="flex gap-2 justify-center">
+                <Button onClick={retryProcessing} variant="kusama">
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Retry
+                </Button>
+                <Button onClick={() => navigate('/my-avatars')} variant="outline">
+                  View My Avatars
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}

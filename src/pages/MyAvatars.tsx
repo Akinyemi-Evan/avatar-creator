@@ -4,7 +4,7 @@ import { Navigation } from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Trash2, ShirtIcon } from "lucide-react";
+import { Loader2, Trash2, ShirtIcon, User } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -73,7 +73,10 @@ const MyAvatars = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-16 h-16 animate-spin text-primary" />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading avatars...</p>
+        </div>
       </div>
     );
   }
@@ -94,11 +97,9 @@ const MyAvatars = () => {
         </div>
 
         {avatars.length === 0 ? (
-          <Card className="gallery-card">
+          <Card className="gallery-card max-w-md mx-auto">
             <CardContent className="p-12 text-center space-y-4">
-              <div className="mx-auto w-24 h-24 rounded-full bg-muted flex items-center justify-center">
-                <span className="text-5xl">👤</span>
-              </div>
+              <User className="w-16 h-16 text-muted-foreground mx-auto" />
               <h3 className="text-xl font-semibold">No avatars yet</h3>
               <p className="text-muted-foreground">Create your first avatar to get started</p>
               <Button onClick={() => navigate("/capture")} variant="kusama">

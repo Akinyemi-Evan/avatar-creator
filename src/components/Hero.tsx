@@ -8,20 +8,9 @@ type FeatureType = "capture" | "process" | "experience" | null;
 export const Hero = () => {
   const [openFeature, setOpenFeature] = useState<FeatureType>(null);
 
-  const scrollToCapture = () => {
+  const navigateToAuth = () => {
     setOpenFeature(null);
-    setTimeout(() => {
-      const element = document.getElementById("capture-section");
-      if (element) {
-        const offset = 80;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - offset;
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-      }
-    }, 100);
+    window.location.href = '/auth';
   };
 
   const featureContent = {
@@ -94,7 +83,7 @@ export const Hero = () => {
           </p>
           
           {/* Features - Kusama-inspired Cards - Now Clickable */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8 animate-soft-scale" style={{ animationDelay: '0.4s' }}>
+          <div id="features-section" className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8 animate-soft-scale" style={{ animationDelay: '0.4s' }}>
             <button
               onClick={() => setOpenFeature("capture")}
               className="group gallery-card p-8 hover:shadow-hover hover:-translate-y-1 transition-all duration-300 cursor-pointer text-left bg-card hover:bg-card/80"
@@ -174,7 +163,7 @@ export const Hero = () => {
           title={featureContent[openFeature].title}
           description={featureContent[openFeature].description}
           content={featureContent[openFeature].content}
-          onStartClick={scrollToCapture}
+          onStartClick={navigateToAuth}
         />
       )}
     </section>

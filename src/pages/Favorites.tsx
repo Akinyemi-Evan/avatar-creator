@@ -95,7 +95,10 @@ const Favorites = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-16 h-16 animate-spin text-primary" />
+        <div className="text-center space-y-4">
+          <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
+          <p className="text-sm text-muted-foreground">Loading favorites...</p>
+        </div>
       </div>
     );
   }
@@ -111,11 +114,9 @@ const Favorites = () => {
         </div>
 
         {snapshots.length === 0 ? (
-          <Card className="gallery-card">
+          <Card className="gallery-card max-w-md mx-auto">
             <CardContent className="p-12 text-center space-y-4">
-              <div className="mx-auto w-24 h-24 rounded-full bg-muted flex items-center justify-center">
-                <Heart className="w-12 h-12 text-muted-foreground" />
-              </div>
+              <Heart className="w-16 h-16 text-muted-foreground mx-auto" />
               <h3 className="text-xl font-semibold">No favorites yet</h3>
               <p className="text-muted-foreground">
                 Start favoriting outfits on the try-on page
