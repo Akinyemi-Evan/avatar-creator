@@ -1,9 +1,23 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Session } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { User } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [session, setSession] = useState<Session | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -14,18 +28,53 @@ export const Navigation = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      const offset = 80; // Height of nav bar
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth",
-      });
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) {
+          const offset = 80;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: "smooth",
+          });
+        }
+      }, 100);
+    } else {
+      const element = document.getElementById(id);
+      if (element) {
+        const offset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: "smooth",
+        });
+      }
     }
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    toast.success("Signed out successfully");
+    navigate("/");
   };
 
   return (
@@ -41,39 +90,85 @@ export const Navigation = () => {
       }}
     >
       <div className="container mx-auto px-4 h-full flex items-center justify-between">
-        {/* Logo/Brand */}
         <button
-          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          onClick={() => navigate("/")}
           className="font-accent text-2xl text-foreground tracking-wide hover:text-primary transition-colors group"
         >
           <span className="relative">
-            VIRTUAL TRY-ON
+            PIXEL PARADE
             <div className="absolute -bottom-1 left-0 w-0 h-[3px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
           </span>
         </button>
 
-        {/* Nav Links */}
         <div className="flex items-center gap-8">
-          <button
-            onClick={() => scrollToSection("capture-section")}
-            className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
-          >
-            CAPTURE
-            <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
-          </button>
-          
-          <Button
-            onClick={() => scrollToSection("capture-section")}
-            variant="kusama"
-            size="sm"
-            className="font-accent tracking-wider"
-          >
-            GET STARTED
-          </Button>
+          <nav className="hidden md:flex items-center gap-6">
+            {session ? (
+              <>
+                <button
+                  onClick={() => navigate("/capture")}
+                  className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
+                >
+                  CAPTURE
+                  <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
+                </button>
+                <button
+                  onClick={() => navigate("/my-avatars")}
+                  className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
+                >
+                  MY AVATARS
+                  <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
+                </button>
+                <button
+                  onClick={() => navigate("/my-wardrobe")}
+                  className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
+                >
+                  WARDROBE
+                  <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
+                </button>
+                <button
+                  onClick={() => navigate("/favorites")}
+                  className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
+                >
+                  FAVORITES
+                  <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => scrollToSection("capture-section")}
+                className="font-accent text-sm tracking-wide text-muted-foreground hover:text-primary transition-colors relative group"
+              >
+                FEATURES
+                <div className="absolute -bottom-1 left-0 w-0 h-[2px] bg-primary rounded-full group-hover:w-full transition-all duration-300" />
+              </button>
+            )}
+          </nav>
+
+          {session ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden md:inline">Account</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button
+              onClick={() => navigate("/auth")}
+              variant="kusama"
+              size="sm"
+              className="font-accent tracking-wider"
+            >
+              GET STARTED
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Polka dot accent */}
       {isScrolled && (
         <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-2 pb-1">
           <div className="w-1 h-1 rounded-full bg-primary opacity-50" />

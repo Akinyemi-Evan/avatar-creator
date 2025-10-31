@@ -14,7 +14,167 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      avatars: {
+        Row: {
+          body_mesh_url: string | null
+          created_at: string
+          face_mesh_url: string | null
+          face_texture_url: string | null
+          id: string
+          measurements: Json | null
+          name: string
+          original_image_url: string
+          processed_image_url: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body_mesh_url?: string | null
+          created_at?: string
+          face_mesh_url?: string | null
+          face_texture_url?: string | null
+          id?: string
+          measurements?: Json | null
+          name: string
+          original_image_url: string
+          processed_image_url: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body_mesh_url?: string | null
+          created_at?: string
+          face_mesh_url?: string | null
+          face_texture_url?: string | null
+          id?: string
+          measurements?: Json | null
+          name?: string
+          original_image_url?: string
+          processed_image_url?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avatars_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outfit_snapshots: {
+        Row: {
+          avatar_id: string
+          clothing_url: string
+          created_at: string
+          id: string
+          is_favorite: boolean
+          notes: string | null
+          snapshot_image: string
+          user_id: string
+        }
+        Insert: {
+          avatar_id: string
+          clothing_url: string
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          notes?: string | null
+          snapshot_image: string
+          user_id: string
+        }
+        Update: {
+          avatar_id?: string
+          clothing_url?: string
+          created_at?: string
+          id?: string
+          is_favorite?: boolean
+          notes?: string | null
+          snapshot_image?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outfit_snapshots_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outfit_snapshots_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tried_on_clothes: {
+        Row: {
+          avatar_id: string
+          clothing_name: string | null
+          clothing_url: string
+          id: string
+          tried_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_id: string
+          clothing_name?: string | null
+          clothing_url: string
+          id?: string
+          tried_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_id?: string
+          clothing_name?: string | null
+          clothing_url?: string
+          id?: string
+          tried_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tried_on_clothes_avatar_id_fkey"
+            columns: ["avatar_id"]
+            isOneToOne: false
+            referencedRelation: "avatars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tried_on_clothes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
