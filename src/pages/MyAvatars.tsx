@@ -84,7 +84,7 @@ const MyAvatars = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
-      <div className="pt-24 p-4 md:p-8">
+      <div className="pt-28 p-4 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
