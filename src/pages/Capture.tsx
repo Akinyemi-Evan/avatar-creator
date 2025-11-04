@@ -100,9 +100,6 @@ const Capture = () => {
 
       setProcessingStatus("Generating 3D avatar...");
       
-      // Convert to base64
-      const base64Data = processedImageUrl.split(",")[1];
-      
       // Call edge function with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000);
@@ -110,7 +107,7 @@ const Capture = () => {
       const { data: avatarData, error: functionError } = await supabase.functions.invoke(
         "generate-avatar-features",
         {
-          body: { personImageBase64: base64Data },
+          body: { personImageBase64: processedImageUrl },
         }
       );
       
