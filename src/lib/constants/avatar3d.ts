@@ -53,6 +53,27 @@ export const TIMEOUT_CONFIG = {
 // Validation limits
 export const VALIDATION_CONFIG = {
   maxImageSize: 10 * 1024 * 1024, // 10MB in bytes
+  minImageDimension: 512, // Minimum width/height in pixels
+  maxImageDimension: 4096, // Maximum width/height in pixels
   allowedProtocols: ['http:', 'https:'],
   allowedImageExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.gif'],
+  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
 } as const;
+
+// Storage bucket names
+export const STORAGE_CONFIG = {
+  avatarsBucket: 'avatars',
+  avatarImagesBucket: 'avatar-images',
+} as const;
+
+// Processing stages for progress tracking
+export const PROCESSING_STAGES = {
+  validating: 'Validating your image...',
+  removingBackground: 'Removing background (30-45s)...',
+  extractingMeasurements: 'Analyzing body proportions...',
+  generating3DFace: 'Creating 3D face model (20s)...',
+  generating3DBody: 'Building 3D body mesh (40-60s)...',
+  savingAvatar: 'Saving your avatar...',
+} as const;
+
+export type ProcessingStage = keyof typeof PROCESSING_STAGES | null;

@@ -1,28 +1,133 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Upload, Loader2, AlertCircle, RotateCcw } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Camera, Upload, Loader2, AlertCircle, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 import { removeBackground } from "@/lib/backgroundRemoval";
 import { extractBodyMeasurements } from "@/lib/bodyMeasurements";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  VALIDATION_CONFIG, 
+  STORAGE_CONFIG, 
+  PROCESSING_STAGES, 
+  type ProcessingStage 
+} from "@/lib/constants/avatar3d";
+
+interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
 
 const Capture = () => {
   const [mode, setMode] = useState<"select" | "camera" | "upload">("select");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState("");
+  const [processingStage, setProcessingStage] = useState<ProcessingStage>(null);
   const [avatarName, setAvatarName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+
+  const isProcessing = processingStage !== null;
+
+  // Cleanup camera stream on unmount or mode change
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, [stream]);
+
+  // Validate image file
+  const validateImage = useCallback(async (file: File): Promise<ValidationResult> => {
+    // Check file size
+    if (file.size > VALIDATION_CONFIG.maxImageSize) {
+      return { 
+        valid: false, 
+        error: `Image must be less than ${Math.floor(VALIDATION_CONFIG.maxImageSize / (1024 * 1024))}MB` 
+      };
+    }
+
+    // Check file type
+    const allowedTypes = VALIDATION_CONFIG.allowedMimeTypes as readonly string[];
+    if (!allowedTypes.includes(file.type)) {
+      return { 
+        valid: false, 
+        error: "Please upload a JPG, PNG, or WebP image" 
+      };
+    }
+
+    // Check dimensions
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(img.src);
+        if (img.width < VALIDATION_CONFIG.minImageDimension || img.height < VALIDATION_CONFIG.minImageDimension) {
+          resolve({ 
+            valid: false, 
+            error: `Image must be at least ${VALIDATION_CONFIG.minImageDimension}x${VALIDATION_CONFIG.minImageDimension} pixels` 
+          });
+        } else if (img.width > VALIDATION_CONFIG.maxImageDimension || img.height > VALIDATION_CONFIG.maxImageDimension) {
+          resolve({ 
+            valid: false, 
+            error: `Image must be smaller than ${VALIDATION_CONFIG.maxImageDimension}x${VALIDATION_CONFIG.maxImageDimension} pixels` 
+          });
+        } else {
+          resolve({ valid: true });
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src);
+        resolve({ valid: false, error: "Failed to load image" });
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  }, []);
+
+  // Sanitize avatar name
+  const sanitizeAvatarName = (name: string): string => {
+    return name
+      .trim()
+      .substring(0, 100)
+      .replace(/[<>"']/g, '')
+      .replace(/\s+/g, ' ');
+  };
+
+  // Upload image to Supabase Storage
+  const uploadImageToStorage = async (
+    imageDataUrl: string,
+    userId: string,
+    fileName: string,
+    bucketName: string
+  ): Promise<string> => {
+    const response = await fetch(imageDataUrl);
+    const blob = await response.blob();
+    
+    const filePath = `${userId}/${Date.now()}_${fileName}`;
+    const { data, error } = await supabase.storage
+      .from(bucketName)
+      .upload(filePath, blob, {
+        contentType: blob.type as 'image/jpeg' | 'image/png' | 'image/webp',
+        upsert: false
+      });
+      
+    if (error) throw error;
+    
+    const { data: urlData } = supabase.storage
+      .from(bucketName)
+      .getPublicUrl(filePath);
+      
+    return urlData.publicUrl;
+  };
 
   const startCamera = async () => {
     try {
@@ -35,17 +140,16 @@ const Capture = () => {
         videoRef.current.srcObject = mediaStream;
       }
     } catch (error) {
-      toast.error("Failed to access camera");
-      console.error(error);
+      toast.error("Unable to access camera. Please check permissions.");
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (stream) {
       stream.getTracks().forEach((track) => track.stop());
       setStream(null);
     }
-  };
+  }, [stream]);
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
@@ -63,72 +167,107 @@ const Capture = () => {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setCapturedImage(reader.result as string);
-        setMode("upload");
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate image
+    const validation = await validateImage(file);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
     }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCapturedImage(reader.result as string);
+      setMode("upload");
+    };
+    reader.readAsDataURL(file);
   };
 
   const processAndSaveAvatar = async () => {
-    if (!capturedImage || !avatarName.trim()) {
+    const sanitizedName = sanitizeAvatarName(avatarName);
+    if (!capturedImage || !sanitizedName) {
       toast.error("Please provide an avatar name");
       return;
     }
 
-    setProcessing(true);
+    const controller = new AbortController();
+    setAbortController(controller);
     setError(null);
-    setProcessingStatus("Removing background...");
 
     try {
-      // Load image
+      // Phase 1: Validation
+      setProcessingStage("validating");
       const img = new Image();
       img.src = capturedImage;
-      await new Promise((resolve) => { img.onload = resolve; });
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = () => reject(new Error("Failed to load image"));
+        if (controller.signal.aborted) reject(new Error("Cancelled"));
+      });
 
-      // Remove background
-      const { blob, canvas } = await removeBackground(img, setProcessingStatus);
+      if (controller.signal.aborted) throw new Error("Cancelled");
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please log in to create an avatar");
+
+      // Phase 2: Background removal
+      setProcessingStage("removingBackground");
+      const { canvas } = await removeBackground(img, (status) => {
+        // Progress updates handled by stage
+      });
       const processedImageUrl = canvas.toDataURL("image/png");
-      
-      setProcessingStatus("Analyzing measurements...");
+
+      if (controller.signal.aborted) throw new Error("Cancelled");
+
+      // Phase 3: Extract measurements
+      setProcessingStage("extractingMeasurements");
       const measurements = await extractBodyMeasurements(processedImageUrl);
 
-      setProcessingStatus("Generating 3D avatar...");
+      if (controller.signal.aborted) throw new Error("Cancelled");
+
+      // Upload images to storage
+      const [originalImageStorageUrl, processedImageStorageUrl] = await Promise.all([
+        uploadImageToStorage(capturedImage, user.id, "original.jpg", STORAGE_CONFIG.avatarImagesBucket),
+        uploadImageToStorage(processedImageUrl, user.id, "processed.png", STORAGE_CONFIG.avatarImagesBucket)
+      ]);
+
+      if (controller.signal.aborted) throw new Error("Cancelled");
+
+      // Phase 4: Generate 3D face
+      setProcessingStage("generating3DFace");
       
-      // Call edge function with timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
+      const functionTimeout = setTimeout(() => controller.abort(), 90000);
       
       const { data: avatarData, error: functionError } = await supabase.functions.invoke(
         "generate-avatar-features",
         {
           body: { personImageBase64: processedImageUrl },
+          signal: controller.signal
         }
       );
       
-      clearTimeout(timeoutId);
+      clearTimeout(functionTimeout);
 
-      if (functionError) throw functionError;
+      if (functionError) {
+        throw new Error(functionError.message || "Failed to generate 3D avatar");
+      }
 
-      setProcessingStatus("Saving avatar...");
+      if (controller.signal.aborted) throw new Error("Cancelled");
 
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      // Phase 5: Save avatar
+      setProcessingStage("savingAvatar");
 
-      // Save to database  
       const { data: avatar, error: dbError } = await supabase
         .from("avatars")
         .insert([{
           user_id: user.id,
-          name: avatarName,
-          original_image_url: capturedImage,
-          processed_image_url: processedImageUrl,
+          name: sanitizedName,
+          original_image_url: originalImageStorageUrl,
+          processed_image_url: processedImageStorageUrl,
           face_mesh_url: avatarData.faceMeshUrl || null,
           body_mesh_url: avatarData.bodyMeshUrl || null,
           face_texture_url: avatarData.faceTextureUrl || null,
@@ -142,19 +281,58 @@ const Capture = () => {
       toast.success("Avatar created successfully!");
       navigate(`/try-on?avatar=${avatar.id}`);
     } catch (error: any) {
-      console.error("Error processing avatar:", error);
-      const errorMessage = error.message || "Failed to create avatar";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      if (error.message === "Cancelled") {
+        toast.info("Avatar creation cancelled");
+        return;
+      }
+
+      let userMessage = "We couldn't create your avatar. ";
+      
+      if (error.message?.includes("timeout") || error.message?.includes("aborted")) {
+        userMessage = "This is taking longer than expected. Try using a smaller image or simpler background.";
+      } else if (error.message?.includes("not authenticated") || error.message?.includes("log in")) {
+        userMessage = "Please log in to create an avatar.";
+      } else if (error.message?.includes("Failed to load")) {
+        userMessage = "There was a problem loading your photo. Please try a different image.";
+      } else if (error.message?.includes("storage")) {
+        userMessage = "Failed to save images. Please try again.";
+      } else if (error.message) {
+        userMessage = error.message;
+      } else {
+        userMessage += "Please try again or use a different photo.";
+      }
+      
+      setError(userMessage);
+      toast.error(userMessage);
     } finally {
-      setProcessing(false);
-      setProcessingStatus("");
+      setProcessingStage(null);
+      setAbortController(null);
     }
+  };
+
+  const cancelProcessing = () => {
+    abortController?.abort();
+    setProcessingStage(null);
+    setAbortController(null);
   };
 
   const retryProcessing = () => {
     setError(null);
     processAndSaveAvatar();
+  };
+
+  const getProgressPercentage = (stage: ProcessingStage): number => {
+    if (!stage) return 0;
+    const stages: ProcessingStage[] = [
+      'validating',
+      'removingBackground',
+      'extractingMeasurements',
+      'generating3DFace',
+      'generating3DBody',
+      'savingAvatar'
+    ];
+    const index = stages.indexOf(stage);
+    return ((index + 1) / stages.length) * 100;
   };
 
   return (
@@ -196,7 +374,7 @@ const Capture = () => {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept={VALIDATION_CONFIG.allowedMimeTypes.join(',')}
                 onChange={handleFileUpload}
                 className="hidden"
               />
@@ -227,7 +405,7 @@ const Capture = () => {
           </Card>
         )}
 
-        {capturedImage && !processing && (
+        {capturedImage && !isProcessing && !error && (
           <Card className="gallery-card">
             <CardHeader>
               <CardTitle>Review & Save</CardTitle>
@@ -242,6 +420,7 @@ const Capture = () => {
                   placeholder="e.g., My First Avatar"
                   value={avatarName}
                   onChange={(e) => setAvatarName(e.target.value)}
+                  maxLength={100}
                   className="rounded-xl"
                 />
               </div>
@@ -269,17 +448,32 @@ const Capture = () => {
           </Card>
         )}
 
-        {processing && (
+        {isProcessing && (
           <Card className="gallery-card">
-            <CardContent className="p-12 flex flex-col items-center gap-4">
+            <CardContent className="p-12 flex flex-col items-center gap-6">
               <Loader2 className="w-16 h-16 animate-spin text-primary" />
-              <p className="text-lg font-medium">{processingStatus}</p>
-              <p className="text-sm text-muted-foreground">This may take a minute...</p>
+              <div className="w-full max-w-md space-y-3">
+                <Progress value={getProgressPercentage(processingStage)} className="w-full" />
+                <p className="text-lg font-medium text-center">
+                  {processingStage ? PROCESSING_STAGES[processingStage] : 'Processing...'}
+                </p>
+                <p className="text-sm text-muted-foreground text-center">
+                  This may take 60-90 seconds...
+                </p>
+              </div>
+              <Button
+                onClick={cancelProcessing}
+                variant="outline"
+                size="sm"
+              >
+                <X className="mr-2 h-4 w-4" />
+                Cancel
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {error && !processing && (
+        {error && !isProcessing && (
           <Card className="gallery-card max-w-md mx-auto">
             <CardContent className="p-8 text-center space-y-4">
               <AlertCircle className="w-12 h-12 mx-auto text-destructive" />

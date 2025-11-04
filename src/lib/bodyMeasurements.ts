@@ -50,20 +50,55 @@ export const extractBodyMeasurements = async (
       const personWidth = maxX - minX;
       const aspectRatio = canvas.height / canvas.width;
 
-      // Calculate measurements based on proportions
-      // These are estimates based on typical human proportions
+      // Enhanced measurements based on typical human proportions
+      // Human body is typically 7.5-8 heads tall
       const heightFactor = personHeight / canvas.height;
       const widthFactor = personWidth / canvas.width;
 
+      // Analyze thirds for better body proportion estimation
+      const upperThird = Math.floor(personHeight / 3);
+      const middleThird = Math.floor(personHeight / 3);
+      
+      // Count pixels in upper third (head + shoulders)
+      let upperThirdPixels = 0;
+      for (let y = minY; y < minY + upperThird; y++) {
+        for (let x = minX; x < maxX; x++) {
+          const alpha = data[(y * canvas.width + x) * 4 + 3];
+          if (alpha > 50) upperThirdPixels++;
+        }
+      }
+      
+      // Count pixels in middle third (torso + arms)
+      let middleThirdPixels = 0;
+      for (let y = minY + upperThird; y < minY + upperThird + middleThird; y++) {
+        for (let x = minX; x < maxX; x++) {
+          const alpha = data[(y * canvas.width + x) * 4 + 3];
+          if (alpha > 50) middleThirdPixels++;
+        }
+      }
+
+      // Estimate shoulder width from upper third
+      const shoulderWidthFactor = (upperThirdPixels / (upperThird * personWidth)) * widthFactor;
+      
+      // Estimate torso from middle third density
+      const torsoFactor = (middleThirdPixels / (middleThird * personWidth)) * heightFactor;
+
       const measurements: BodyMeasurements = {
-        height: 0.9 + heightFactor * 0.3, // 0.9 - 1.2
-        shoulderWidth: 0.9 + widthFactor * 0.3, // 0.9 - 1.2
-        torsoLength: 0.95 + (aspectRatio > 1 ? 0.1 : 0), // Adjust for portrait vs landscape
-        armLength: 1.0, // Default
-        legLength: 0.95 + heightFactor * 0.15, // Based on height
+        height: 0.85 + heightFactor * 0.35, // 0.85 - 1.2 range
+        shoulderWidth: 0.85 + shoulderWidthFactor * 0.4, // 0.85 - 1.25 range
+        torsoLength: 0.9 + torsoFactor * 0.25 + (aspectRatio > 1 ? 0.05 : 0),
+        armLength: 0.95 + heightFactor * 0.15, // Arms scale with height
+        legLength: 0.9 + heightFactor * 0.25, // Legs are longer portion of body
       };
 
-      resolve(measurements);
+      // Clamp values to reasonable ranges
+      resolve({
+        height: Math.max(0.8, Math.min(1.2, measurements.height)),
+        shoulderWidth: Math.max(0.8, Math.min(1.2, measurements.shoulderWidth)),
+        torsoLength: Math.max(0.8, Math.min(1.2, measurements.torsoLength)),
+        armLength: Math.max(0.8, Math.min(1.2, measurements.armLength)),
+        legLength: Math.max(0.8, Math.min(1.2, measurements.legLength)),
+      });
     };
 
     img.onerror = () => resolve(getDefaultMeasurements());
